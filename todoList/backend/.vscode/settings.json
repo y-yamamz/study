@@ -1,0 +1,8 @@
+{
+  "java.compile.nullAnalysis.mode": "automatic",
+  "svn.ignoreMissingSvnWarning": true,
+  "java.debug.settings.showVariableValuesOnHover": true,
+  "java.configuration.updateBuildConfiguration": "interactive"
+
+
+}
