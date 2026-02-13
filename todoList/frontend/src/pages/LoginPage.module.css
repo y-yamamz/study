@@ -1,0 +1,13 @@
+.centering_parent {
+    padding: 0;              /* 余白指定 */
+    text-align:  center;        /* 中央寄せ */
+    background-color: blueviolet;    /* 背景色指定 */
+    height: 100%;              /* 高さ指定 */
+    width: 100%;
+}
+
+.centering_item {
+    background-color: #FFEB3B;  /* 背景色指定 */
+}
+
+
