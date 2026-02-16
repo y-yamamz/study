@@ -6,6 +6,7 @@ import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import { useEffect, useState } from "react";
+import { SERVICE_URL } from '../constants/const';
 
 
 export interface TodoListKey {
@@ -38,7 +39,7 @@ export interface TodoList extends TodoListKey {
 const getTaskList = async (): Promise<TodoList[]>  => {
 
   
-      const res = await fetch("http://localhost:8080/backend/api/todoList", {
+      const res = await fetch(SERVICE_URL.BASE_URL + "api/todoList", {
         method:"POST",
         headers:{
           "Content-Type": "application/json",

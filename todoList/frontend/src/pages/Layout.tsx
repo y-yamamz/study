@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, Outlet } from "react-router-dom";
 import Header from "../components/Header";
 import styles from './Layout.module.css';
+import { SERVICE_URL } from "../constants/const";
 
 
 interface MenuListDto{
@@ -19,7 +20,7 @@ const getMenuList = async (): Promise<MenuListDto[]>  => {
         url:""
       }
 
-      const res = await fetch("http://localhost:8080/backend/api/menuList", {
+      const res = await fetch(SERVICE_URL.BASE_URL + "api/menuList", {
         method:"POST",
         headers:{
           "Content-Type": "application/json",

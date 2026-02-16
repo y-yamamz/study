@@ -11,6 +11,7 @@ import {
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "../components/Header";
+import { SERVICE_URL } from "../constants/const";
 
 
 const LoginPage = () => {
@@ -56,7 +57,7 @@ const LoginPage = () => {
         password:password,
       }
 
-      const res = await fetch("http://localhost:8080/backend/api/userLogin", {
+      const res = await fetch(SERVICE_URL.BASE_URL + "api/userLogin", {
         method:"POST",
         headers:{
           "Content-Type": "application/json",
