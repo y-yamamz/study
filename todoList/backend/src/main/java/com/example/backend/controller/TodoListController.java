@@ -2,10 +2,13 @@ package com.example.backend.controller;
 
 import java.util.List;
 
+import org.springframework.beans.BeanUtils;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.example.backend.db.entity.TodoList;
 import com.example.backend.dto.TodoListDataDto;
 
 import lombok.RequiredArgsConstructor;
@@ -27,12 +30,19 @@ public class TodoListController {
     }
 
 
-    @PostMapping("/register")
-    public void register(@RequestBody TodoListDataDto dto) {
-        
-        if(dto.getProjectCd() == null || dto.getProjectCd().isEmpty()) {
-            
+    @PostMapping("/todoRegister")
+    @Transactional
+    public void register(@RequestBody List<TodoListDataDto> dtoList) {
+        String val = "";
+        for(TodoListDataDto dto : dtoList) {
+            TodoList entity = new TodoList();
+            BeanUtils.copyProperties(dto, entity);
+            //todoListService.save(entity);
+
+            val += "note: " + dto.getNote() + ", ";
         }
+        
+
 
     }
 
