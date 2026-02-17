@@ -1,0 +1,301 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.backend.db.mapper.MCodeMapper">
+  <resultMap id="BaseResultMap" type="com.example.backend.db.entity.MCode">
+    <id column="GR_CD" jdbcType="VARCHAR" property="grCd" />
+    <id column="CD" jdbcType="VARCHAR" property="cd" />
+    <result column="CD_NAME" jdbcType="VARCHAR" property="cdName" />
+    <result column="NOTE" jdbcType="VARCHAR" property="note" />
+    <result column="BIKO" jdbcType="VARCHAR" property="biko" />
+    <result column="YUKO_FLAG" jdbcType="CHAR" property="yukoFlag" />
+    <result column="INS_DATE" jdbcType="TIMESTAMP" property="insDate" />
+    <result column="INS_USER_ID" jdbcType="VARCHAR" property="insUserId" />
+    <result column="UPD_DATE" jdbcType="TIMESTAMP" property="updDate" />
+    <result column="UPD_USER_ID" jdbcType="VARCHAR" property="updUserId" />
+  </resultMap>
+  <sql id="Example_Where_Clause">
+    <where>
+      <foreach collection="oredCriteria" item="criteria" separator="or">
+        <if test="criteria.valid">
+          <trim prefix="(" prefixOverrides="and" suffix=")">
+            <foreach collection="criteria.criteria" item="criterion">
+              <choose>
+                <when test="criterion.noValue">
+                  and ${criterion.condition}
+                </when>
+                <when test="criterion.singleValue">
+                  and ${criterion.condition} #{criterion.value}
+                </when>
+                <when test="criterion.betweenValue">
+                  and ${criterion.condition} #{criterion.value} and #{criterion.secondValue}
+                </when>
+                <when test="criterion.listValue">
+                  and ${criterion.condition}
+                  <foreach close=")" collection="criterion.value" item="listItem" open="(" separator=",">
+                    #{listItem}
+                  </foreach>
+                </when>
+              </choose>
+            </foreach>
+          </trim>
+        </if>
+      </foreach>
+    </where>
+  </sql>
+  <sql id="Update_By_Example_Where_Clause">
+    <where>
+      <foreach collection="example.oredCriteria" item="criteria" separator="or">
+        <if test="criteria.valid">
+          <trim prefix="(" prefixOverrides="and" suffix=")">
+            <foreach collection="criteria.criteria" item="criterion">
+              <choose>
+                <when test="criterion.noValue">
+                  and ${criterion.condition}
+                </when>
+                <when test="criterion.singleValue">
+                  and ${criterion.condition} #{criterion.value}
+                </when>
+                <when test="criterion.betweenValue">
+                  and ${criterion.condition} #{criterion.value} and #{criterion.secondValue}
+                </when>
+                <when test="criterion.listValue">
+                  and ${criterion.condition}
+                  <foreach close=")" collection="criterion.value" item="listItem" open="(" separator=",">
+                    #{listItem}
+                  </foreach>
+                </when>
+              </choose>
+            </foreach>
+          </trim>
+        </if>
+      </foreach>
+    </where>
+  </sql>
+  <sql id="Base_Column_List">
+    GR_CD, CD, CD_NAME, NOTE, BIKO, YUKO_FLAG, INS_DATE, INS_USER_ID, UPD_DATE, UPD_USER_ID
+  </sql>
+  <select id="selectByExample" parameterType="com.example.backend.db.entity.MCodeExample" resultMap="BaseResultMap">
+    select
+    <if test="distinct">
+      distinct
+    </if>
+    <include refid="Base_Column_List" />
+    from M_CODE
+    <if test="_parameter != null">
+      <include refid="Example_Where_Clause" />
+    </if>
+    <if test="orderByClause != null">
+      order by ${orderByClause}
+    </if>
+  </select>
+  <select id="selectByPrimaryKey" parameterType="com.example.backend.db.entity.MCodeKey" resultMap="BaseResultMap">
+    select 
+    <include refid="Base_Column_List" />
+    from M_CODE
+    where GR_CD = #{grCd,jdbcType=VARCHAR}
+      and CD = #{cd,jdbcType=VARCHAR}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="com.example.backend.db.entity.MCodeKey">
+    delete from M_CODE
+    where GR_CD = #{grCd,jdbcType=VARCHAR}
+      and CD = #{cd,jdbcType=VARCHAR}
+  </delete>
+  <delete id="deleteByExample" parameterType="com.example.backend.db.entity.MCodeExample">
+    delete from M_CODE
+    <if test="_parameter != null">
+      <include refid="Example_Where_Clause" />
+    </if>
+  </delete>
+  <insert id="insert" parameterType="com.example.backend.db.entity.MCode">
+    insert into M_CODE (GR_CD, CD, CD_NAME, 
+      NOTE, BIKO, YUKO_FLAG, 
+      INS_DATE, INS_USER_ID, UPD_DATE, 
+      UPD_USER_ID)
+    values (#{grCd,jdbcType=VARCHAR}, #{cd,jdbcType=VARCHAR}, #{cdName,jdbcType=VARCHAR}, 
+      #{note,jdbcType=VARCHAR}, #{biko,jdbcType=VARCHAR}, #{yukoFlag,jdbcType=CHAR}, 
+      #{insDate,jdbcType=TIMESTAMP}, #{insUserId,jdbcType=VARCHAR}, #{updDate,jdbcType=TIMESTAMP}, 
+      #{updUserId,jdbcType=VARCHAR})
+  </insert>
+  <insert id="insertSelective" parameterType="com.example.backend.db.entity.MCode">
+    insert into M_CODE
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="grCd != null">
+        GR_CD,
+      </if>
+      <if test="cd != null">
+        CD,
+      </if>
+      <if test="cdName != null">
+        CD_NAME,
+      </if>
+      <if test="note != null">
+        NOTE,
+      </if>
+      <if test="biko != null">
+        BIKO,
+      </if>
+      <if test="yukoFlag != null">
+        YUKO_FLAG,
+      </if>
+      <if test="insDate != null">
+        INS_DATE,
+      </if>
+      <if test="insUserId != null">
+        INS_USER_ID,
+      </if>
+      <if test="updDate != null">
+        UPD_DATE,
+      </if>
+      <if test="updUserId != null">
+        UPD_USER_ID,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides=",">
+      <if test="grCd != null">
+        #{grCd,jdbcType=VARCHAR},
+      </if>
+      <if test="cd != null">
+        #{cd,jdbcType=VARCHAR},
+      </if>
+      <if test="cdName != null">
+        #{cdName,jdbcType=VARCHAR},
+      </if>
+      <if test="note != null">
+        #{note,jdbcType=VARCHAR},
+      </if>
+      <if test="biko != null">
+        #{biko,jdbcType=VARCHAR},
+      </if>
+      <if test="yukoFlag != null">
+        #{yukoFlag,jdbcType=CHAR},
+      </if>
+      <if test="insDate != null">
+        #{insDate,jdbcType=TIMESTAMP},
+      </if>
+      <if test="insUserId != null">
+        #{insUserId,jdbcType=VARCHAR},
+      </if>
+      <if test="updDate != null">
+        #{updDate,jdbcType=TIMESTAMP},
+      </if>
+      <if test="updUserId != null">
+        #{updUserId,jdbcType=VARCHAR},
+      </if>
+    </trim>
+  </insert>
+  <select id="countByExample" parameterType="com.example.backend.db.entity.MCodeExample" resultType="java.lang.Long">
+    select count(*) from M_CODE
+    <if test="_parameter != null">
+      <include refid="Example_Where_Clause" />
+    </if>
+  </select>
+  <update id="updateByExampleSelective" parameterType="map">
+    update M_CODE
+    <set>
+      <if test="row.grCd != null">
+        GR_CD = #{row.grCd,jdbcType=VARCHAR},
+      </if>
+      <if test="row.cd != null">
+        CD = #{row.cd,jdbcType=VARCHAR},
+      </if>
+      <if test="row.cdName != null">
+        CD_NAME = #{row.cdName,jdbcType=VARCHAR},
+      </if>
+      <if test="row.note != null">
+        NOTE = #{row.note,jdbcType=VARCHAR},
+      </if>
+      <if test="row.biko != null">
+        BIKO = #{row.biko,jdbcType=VARCHAR},
+      </if>
+      <if test="row.yukoFlag != null">
+        YUKO_FLAG = #{row.yukoFlag,jdbcType=CHAR},
+      </if>
+      <if test="row.insDate != null">
+        INS_DATE = #{row.insDate,jdbcType=TIMESTAMP},
+      </if>
+      <if test="row.insUserId != null">
+        INS_USER_ID = #{row.insUserId,jdbcType=VARCHAR},
+      </if>
+      <if test="row.updDate != null">
+        UPD_DATE = #{row.updDate,jdbcType=TIMESTAMP},
+      </if>
+      <if test="row.updUserId != null">
+        UPD_USER_ID = #{row.updUserId,jdbcType=VARCHAR},
+      </if>
+    </set>
+    <if test="example != null">
+      <include refid="Update_By_Example_Where_Clause" />
+    </if>
+  </update>
+  <update id="updateByExample" parameterType="map">
+    update M_CODE
+    set GR_CD = #{row.grCd,jdbcType=VARCHAR},
+      CD = #{row.cd,jdbcType=VARCHAR},
+      CD_NAME = #{row.cdName,jdbcType=VARCHAR},
+      NOTE = #{row.note,jdbcType=VARCHAR},
+      BIKO = #{row.biko,jdbcType=VARCHAR},
+      YUKO_FLAG = #{row.yukoFlag,jdbcType=CHAR},
+      INS_DATE = #{row.insDate,jdbcType=TIMESTAMP},
+      INS_USER_ID = #{row.insUserId,jdbcType=VARCHAR},
+      UPD_DATE = #{row.updDate,jdbcType=TIMESTAMP},
+      UPD_USER_ID = #{row.updUserId,jdbcType=VARCHAR}
+    <if test="example != null">
+      <include refid="Update_By_Example_Where_Clause" />
+    </if>
+  </update>
+  <update id="updateByPrimaryKeySelective" parameterType="com.example.backend.db.entity.MCode">
+    update M_CODE
+    <set>
+      <if test="cdName != null">
+        CD_NAME = #{cdName,jdbcType=VARCHAR},
+      </if>
+      <if test="note != null">
+        NOTE = #{note,jdbcType=VARCHAR},
+      </if>
+      <if test="biko != null">
+        BIKO = #{biko,jdbcType=VARCHAR},
+      </if>
+      <if test="yukoFlag != null">
+        YUKO_FLAG = #{yukoFlag,jdbcType=CHAR},
+      </if>
+      <if test="insDate != null">
+        INS_DATE = #{insDate,jdbcType=TIMESTAMP},
+      </if>
+      <if test="insUserId != null">
+        INS_USER_ID = #{insUserId,jdbcType=VARCHAR},
+      </if>
+      <if test="updDate != null">
+        UPD_DATE = #{updDate,jdbcType=TIMESTAMP},
+      </if>
+      <if test="updUserId != null">
+        UPD_USER_ID = #{updUserId,jdbcType=VARCHAR},
+      </if>
+    </set>
+    where GR_CD = #{grCd,jdbcType=VARCHAR}
+      and CD = #{cd,jdbcType=VARCHAR}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.example.backend.db.entity.MCode">
+    update M_CODE
+    set CD_NAME = #{cdName,jdbcType=VARCHAR},
+      NOTE = #{note,jdbcType=VARCHAR},
+      BIKO = #{biko,jdbcType=VARCHAR},
+      YUKO_FLAG = #{yukoFlag,jdbcType=CHAR},
+      INS_DATE = #{insDate,jdbcType=TIMESTAMP},
+      INS_USER_ID = #{insUserId,jdbcType=VARCHAR},
+      UPD_DATE = #{updDate,jdbcType=TIMESTAMP},
+      UPD_USER_ID = #{updUserId,jdbcType=VARCHAR}
+    where GR_CD = #{grCd,jdbcType=VARCHAR}
+      and CD = #{cd,jdbcType=VARCHAR}
+  </update>
+
+  <select id="selectCbbList"
+        resultType="com.example.backend.dto.MCodeDto">
+    SELECT  CD, CD_NAME
+    FROM M_CODE
+    WHERE 
+      GR_CD = #{grCd,jdbcType=VARCHAR}
+      AND
+     YUKO_FLAG = '1'
+  </select>
+
+</mapper>

@@ -35,8 +35,8 @@
 
 
         <!-- テーブル指定 -->
-        <table tableName="M_PROJECT"
-            domainObjectName="MProject" />
+        <table tableName="M_SYSTEM"
+            domainObjectName="MSystem" />
     </context>
 
 </generatorConfiguration>

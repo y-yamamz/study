@@ -10,6 +10,8 @@ import com.example.backend.dto.TodoListDataDto;
 
 import lombok.RequiredArgsConstructor;
 import com.example.backend.service.TodoListService;
+import org.springframework.web.bind.annotation.RequestBody;
+
 
 @RestController
 @RequestMapping("/api")
@@ -21,12 +23,17 @@ public class TodoListController {
     @PostMapping("/todoList")
     public List<TodoListDataDto> getTodoDataList() {
         List<TodoListDataDto> lst = todoListService.getListData();
+        return lst;
+    }
 
-        if (lst.size() > 0) {
 
+    @PostMapping("/register")
+    public void register(@RequestBody TodoListDataDto dto) {
+        
+        if(dto.getProjectCd() == null || dto.getProjectCd().isEmpty()) {
+            
         }
 
-        return lst;
     }
 
 }
