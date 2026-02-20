@@ -35,8 +35,8 @@
 
 
         <!-- テーブル指定 -->
-        <table tableName="M_SYSTEM"
-            domainObjectName="MSystem" />
+        <table tableName="MEMO_PAD"
+            domainObjectName="MemoPad" />
     </context>
 
 </generatorConfiguration>

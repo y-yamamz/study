@@ -1,5 +1,6 @@
 package com.example.backend.service.impl;
 
+import java.util.Date;
 import java.util.List;
 
 import org.springframework.beans.BeanUtils;
@@ -32,6 +33,21 @@ public class TodoListServiceImpl implements TodoListService {
         for(TodoListDataDto dto : entryList) {
             TodoList entity = new TodoList();
             BeanUtils.copyProperties(dto, entity);
+
+            if(entity.getInsDate() == null) {
+                entity.setInsDate(new Date());
+            }
+            if(entity.getInsUserId() == null) {
+                entity.setInsUserId("SYSTEM");
+            }
+            if(entity.getUpdDate() == null) {
+                entity.setUpdDate(new Date());
+            }
+            if(entity.getUpdUserId() == null) {
+                entity.setUpdUserId("SYSTEM");
+            }
+
+
             TodoList selDto = todoListMapper.selectByPrimaryKey(entity);
             if(selDto != null) {
                 //更新

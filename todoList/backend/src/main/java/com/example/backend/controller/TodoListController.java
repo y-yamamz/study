@@ -33,17 +33,7 @@ public class TodoListController {
     @PostMapping("/todoRegister")
     @Transactional
     public void register(@RequestBody List<TodoListDataDto> dtoList) {
-        String val = "";
-        for(TodoListDataDto dto : dtoList) {
-            TodoList entity = new TodoList();
-            BeanUtils.copyProperties(dto, entity);
-            //todoListService.save(entity);
-
-            val += "note: " + dto.getNote() + ", ";
-        }
-        
-
-
+        todoListService.save(dtoList);
     }
 
 }
