@@ -7,6 +7,7 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 
 import com.example.backend.db.entity.TodoList;
+import com.example.backend.db.entity.TodoListKey;
 import com.example.backend.db.mapper.TodoListMapper;
 import com.example.backend.dto.TodoListDataDto;
 import com.example.backend.service.TodoListService;
@@ -55,6 +56,23 @@ public class TodoListServiceImpl implements TodoListService {
             } else {
                 todoListMapper.insert(entity);
             }
+        }
+    }
+
+    /**
+     * TODOリストを削除する
+     * 複合主キー(systemCd + projectCd + ticketNo)でレコードを物理削除する
+     * @param entryList 削除対象のDTOリスト
+     */
+    @Override
+    public void delete(List<TodoListDataDto> entryList) {
+        for (TodoListDataDto dto : entryList) {
+            // 複合主キーを設定して削除
+            TodoListKey key = new TodoListKey();
+            key.setSystemCd(dto.getSystemCd());
+            key.setProjectCd(dto.getProjectCd());
+            key.setTicketNo(dto.getTicketNo());
+            todoListMapper.deleteByPrimaryKey(key);
         }
     }
 

@@ -31,6 +31,23 @@ public class TodoListController {
         return lst;
     }
 
+    /**
+     * TODOリストを削除する
+     * @param dtoList 削除対象DTOリスト（複合主キーで削除）
+     * @return 処理結果（status, message）
+     */
+    @PostMapping("/todoDelete")
+    @Transactional
+    public ResponseEntity<Map<String, Object>> delete(@RequestBody List<TodoListDataDto> dtoList) {
+        todoListService.delete(dtoList);
+
+        Map<String, Object> res = new HashMap<>();
+        res.put("status", "OK");
+        res.put("message", "削除完了");
+
+        return ResponseEntity.ok(res);
+    }
+
     @PostMapping("/todoRegister")
     @Transactional
     public ResponseEntity<Map<String, Object>> register(@RequestBody List<TodoListDataDto> dtoList) {

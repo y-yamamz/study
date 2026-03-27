@@ -1,0 +1,17 @@
+CREATE TABLE TODO_LIST (
+  SYSTEM_CD varchar(3) NOT NULL COMMENT 'システムCD',
+  PROJECT_CD varchar(3) NOT NULL COMMENT 'プロジェクトCD',
+  TICKET_NO varchar(8) NOT NULL COMMENT 'チケットNo',
+  REVISION_NO varchar(50)  NULL COMMENT 'リビジョン番号',
+  STATUS_CD varchar(4)  NULL COMMENT 'ステータスCD',
+  DEPLOY_CD varchar(4)  NULL COMMENT 'デプロイCD',
+  NOTE varchar(1000)  NULL COMMENT '内容',
+  BIKO varchar(2000)  NULL COMMENT '備考',
+  YUKO_FLAG char(1)  NULL COMMENT '有効フラグ',
+  INS_DATE datetime(3) NOT NULL COMMENT '登録日',
+  INS_USER_ID varchar(20) NOT NULL DEFAULT '' COMMENT '登録ユーザーID',
+  UPD_DATE datetime(3) NOT NULL COMMENT '更新日',
+  UPD_USER_ID varchar(20) NOT NULL DEFAULT '' COMMENT '更新ユーザーID',
+  PRIMARY KEY (SYSTEM_CD,PROJECT_CD,TICKET_NO)
+) DEFAULT CHARSET=utf8mb4 COMMENT='作業リスト'
+

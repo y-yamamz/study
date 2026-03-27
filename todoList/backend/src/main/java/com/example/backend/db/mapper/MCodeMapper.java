@@ -4,6 +4,7 @@ import com.example.backend.db.entity.MCode;
 import com.example.backend.db.entity.MCodeExample;
 import com.example.backend.db.entity.MCodeKey;
 import com.example.backend.dto.MCodeDto;
+
 import java.util.List;
 
 import org.apache.ibatis.annotations.Mapper;
@@ -12,7 +13,7 @@ import org.apache.ibatis.annotations.Param;
 @Mapper
 public interface MCodeMapper {
     List<MCodeDto> selectCbbList(MCodeDto dto);
-    
+
     long countByExample(MCodeExample example);
 
     int deleteByExample(MCodeExample example);

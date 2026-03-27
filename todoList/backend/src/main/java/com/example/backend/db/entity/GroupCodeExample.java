@@ -4,14 +4,14 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-public class MCodeExample {
+public class GroupCodeExample {
     protected String orderByClause;
 
     protected boolean distinct;
 
     protected List<Criteria> oredCriteria;
 
-    public MCodeExample() {
+    public GroupCodeExample() {
         oredCriteria = new ArrayList<>();
     }
 
@@ -103,76 +103,6 @@ public class MCodeExample {
                 throw new RuntimeException("Between values for " + property + " cannot be null");
             }
             criteria.add(new Criterion(condition, value1, value2));
-        }
-
-        public Criteria andGrCdIsNull() {
-            addCriterion("GR_CD is null");
-            return (Criteria) this;
-        }
-
-        public Criteria andGrCdIsNotNull() {
-            addCriterion("GR_CD is not null");
-            return (Criteria) this;
-        }
-
-        public Criteria andGrCdEqualTo(String value) {
-            addCriterion("GR_CD =", value, "grCd");
-            return (Criteria) this;
-        }
-
-        public Criteria andGrCdNotEqualTo(String value) {
-            addCriterion("GR_CD <>", value, "grCd");
-            return (Criteria) this;
-        }
-
-        public Criteria andGrCdGreaterThan(String value) {
-            addCriterion("GR_CD >", value, "grCd");
-            return (Criteria) this;
-        }
-
-        public Criteria andGrCdGreaterThanOrEqualTo(String value) {
-            addCriterion("GR_CD >=", value, "grCd");
-            return (Criteria) this;
-        }
-
-        public Criteria andGrCdLessThan(String value) {
-            addCriterion("GR_CD <", value, "grCd");
-            return (Criteria) this;
-        }
-
-        public Criteria andGrCdLessThanOrEqualTo(String value) {
-            addCriterion("GR_CD <=", value, "grCd");
-            return (Criteria) this;
-        }
-
-        public Criteria andGrCdLike(String value) {
-            addCriterion("GR_CD like", value, "grCd");
-            return (Criteria) this;
-        }
-
-        public Criteria andGrCdNotLike(String value) {
-            addCriterion("GR_CD not like", value, "grCd");
-            return (Criteria) this;
-        }
-
-        public Criteria andGrCdIn(List<String> values) {
-            addCriterion("GR_CD in", values, "grCd");
-            return (Criteria) this;
-        }
-
-        public Criteria andGrCdNotIn(List<String> values) {
-            addCriterion("GR_CD not in", values, "grCd");
-            return (Criteria) this;
-        }
-
-        public Criteria andGrCdBetween(String value1, String value2) {
-            addCriterion("GR_CD between", value1, value2, "grCd");
-            return (Criteria) this;
-        }
-
-        public Criteria andGrCdNotBetween(String value1, String value2) {
-            addCriterion("GR_CD not between", value1, value2, "grCd");
-            return (Criteria) this;
         }
 
         public Criteria andCdIsNull() {
@@ -452,76 +382,6 @@ public class MCodeExample {
 
         public Criteria andBikoNotBetween(String value1, String value2) {
             addCriterion("BIKO not between", value1, value2, "biko");
-            return (Criteria) this;
-        }
-
-        public Criteria andColorIsNull() {
-            addCriterion("COLOR is null");
-            return (Criteria) this;
-        }
-
-        public Criteria andColorIsNotNull() {
-            addCriterion("COLOR is not null");
-            return (Criteria) this;
-        }
-
-        public Criteria andColorEqualTo(String value) {
-            addCriterion("COLOR =", value, "color");
-            return (Criteria) this;
-        }
-
-        public Criteria andColorNotEqualTo(String value) {
-            addCriterion("COLOR <>", value, "color");
-            return (Criteria) this;
-        }
-
-        public Criteria andColorGreaterThan(String value) {
-            addCriterion("COLOR >", value, "color");
-            return (Criteria) this;
-        }
-
-        public Criteria andColorGreaterThanOrEqualTo(String value) {
-            addCriterion("COLOR >=", value, "color");
-            return (Criteria) this;
-        }
-
-        public Criteria andColorLessThan(String value) {
-            addCriterion("COLOR <", value, "color");
-            return (Criteria) this;
-        }
-
-        public Criteria andColorLessThanOrEqualTo(String value) {
-            addCriterion("COLOR <=", value, "color");
-            return (Criteria) this;
-        }
-
-        public Criteria andColorLike(String value) {
-            addCriterion("COLOR like", value, "color");
-            return (Criteria) this;
-        }
-
-        public Criteria andColorNotLike(String value) {
-            addCriterion("COLOR not like", value, "color");
-            return (Criteria) this;
-        }
-
-        public Criteria andColorIn(List<String> values) {
-            addCriterion("COLOR in", values, "color");
-            return (Criteria) this;
-        }
-
-        public Criteria andColorNotIn(List<String> values) {
-            addCriterion("COLOR not in", values, "color");
-            return (Criteria) this;
-        }
-
-        public Criteria andColorBetween(String value1, String value2) {
-            addCriterion("COLOR between", value1, value2, "color");
-            return (Criteria) this;
-        }
-
-        public Criteria andColorNotBetween(String value1, String value2) {
-            addCriterion("COLOR not between", value1, value2, "color");
             return (Criteria) this;
         }
 

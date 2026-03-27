@@ -1,0 +1,9 @@
+CREATE TABLE M_MENU (
+  ID varchar(3) NOT NULL COMMENT 'メニューID',
+  NAME varchar(200) NOT NULL COMMENT '名称',
+ URL varchar(2000) NOT NULL COMMENT 'URL',
+  BIKO varchar(2000)  NULL COMMENT '備考',
+  YUKO_FLAG char(1)  NOT NULL COMMENT '有効フラグ',
+  PRIMARY KEY (ID)
+) DEFAULT CHARSET=utf8mb4 COMMENT='メニューマスタ'
+

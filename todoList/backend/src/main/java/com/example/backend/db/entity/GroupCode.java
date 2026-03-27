@@ -2,14 +2,14 @@ package com.example.backend.db.entity;
 
 import java.util.Date;
 
-public class MCode extends MCodeKey {
+public class GroupCode {
+    private String cd;
+
     private String cdName;
 
     private String note;
 
     private String biko;
-
-    private String color;
 
     private String yukoFlag;
 
@@ -20,6 +20,14 @@ public class MCode extends MCodeKey {
     private Date updDate;
 
     private String updUserId;
+
+    public String getCd() {
+        return cd;
+    }
+
+    public void setCd(String cd) {
+        this.cd = cd;
+    }
 
     public String getCdName() {
         return cdName;
@@ -43,14 +51,6 @@ public class MCode extends MCodeKey {
 
     public void setBiko(String biko) {
         this.biko = biko;
-    }
-
-    public String getColor() {
-        return color;
-    }
-
-    public void setColor(String color) {
-        this.color = color;
     }
 
     public String getYukoFlag() {

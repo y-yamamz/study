@@ -1,0 +1,665 @@
+================================================================================
+  TodoList アプリケーション ソースコード解析レポート
+  作成日: 2026-03-27
+================================================================================
+
+目次
+  1. プロジェクト概要
+  2. システム構成
+  3. バックエンド詳細
+     3-1. プロジェクト構造
+     3-2. 技術スタック
+     3-3. APIエンドポイント一覧
+     3-4. データベースモデル
+     3-5. サービス層
+     3-6. 設定ファイル
+  4. フロントエンド詳細
+     4-1. プロジェクト構造
+     4-2. 技術スタック
+     4-3. 画面・コンポーネント一覧
+     4-4. DTOインターフェース
+     4-5. 設定ファイル
+  5. バックエンド・フロントエンド連携
+  6. アーキテクチャ概要
+
+
+================================================================================
+1. プロジェクト概要
+================================================================================
+
+本アプリケーションは、チケット（タスク）管理を行うTODOリストシステムです。
+システムマスタ・プロジェクトマスタに紐づいたチケットを管理し、
+進捗状態・デプロイ状態を追跡します。
+また、ローカルAI（Ollama）との連携機能も実装されています。
+
+
+================================================================================
+2. システム構成
+================================================================================
+
+  [フロントエンド]                [バックエンド]              [データベース]
+  React 19 + TypeScript  <--->  Spring Boot 3.5  <--->  MySQL 8
+  (localhost:5173)              (localhost:8080)         (192.168.0.17:3306)
+                                      |
+                                [外部AIサービス]
+                                 Ollama (llama3)
+                                (localhost:11434)
+
+通信方式: REST API (JSON)
+CORS設定: フロントエンドのオリジン (http://localhost:5173) を許可
+
+
+================================================================================
+3. バックエンド詳細
+================================================================================
+
+--------------------------------------------------------------------------------
+3-1. プロジェクト構造
+--------------------------------------------------------------------------------
+
+backend/
+├── build.gradle                        # Gradleビルド設定
+├── generatorConfig.xml                 # MyBatis Generator設定
+├── settings.gradle
+├── gradlew / gradlew.bat
+├── src/main/java/com/example/backend/
+│   ├── BackendApplication.java         # アプリケーションエントリポイント
+│   ├── MyBatisGeneratorRunner.java     # MyBatisコード生成ユーティリティ
+│   ├── config/
+│   │   └── WebConfig.java              # CORS設定
+│   ├── controller/                     # RESTコントローラ
+│   │   ├── UserController.java         # ユーザー・ログイン・AI連携
+│   │   ├── UserForm.java               # ログインフォームクラス
+│   │   ├── TodoListController.java     # TODOリストCRUD
+│   │   ├── MenuController.java         # メニュー管理
+│   │   ├── MenuForm.java
+│   │   ├── MasterController.java       # マスタデータ管理
+│   │   ├── TestController.java         # テスト用エンドポイント
+│   │   └── McpController.java          # AI(MCP)エンドポイント
+│   ├── db/
+│   │   ├── entity/                     # DBエンティティ
+│   │   │   ├── TodoList.java / TodoListKey.java / TodoListExample.java
+│   │   │   ├── MMenu.java / MMenuExample.java
+│   │   │   ├── MCode.java / MCodeKey.java / MCodeExample.java
+│   │   │   ├── MProject.java / MProjectKey.java / MProjectExample.java
+│   │   │   ├── MSystem.java / MSystemExample.java
+│   │   │   └── MemoPad.java / MemoPadKey.java / MemoPadExample.java
+│   │   └── mapper/                     # MyBatisマッパーインターフェース
+│   │       ├── TodoListMapper.java
+│   │       ├── MMenuMapper.java
+│   │       ├── MCodeMapper.java
+│   │       ├── MProjectMapper.java
+│   │       ├── MSystemMapper.java
+│   │       └── MemoPadMapper.java
+│   ├── dto/                            # データ転送オブジェクト
+│   │   ├── TodoListDataDto.java
+│   │   ├── MenuListDao.java
+│   │   ├── MCodeDto.java
+│   │   ├── MProjectDto.java
+│   │   └── MSystemDto.java
+│   └── service/                        # ビジネスロジック
+│       ├── TodoListService.java
+│       ├── MMenuService.java
+│       ├── MstCodeService.java
+│       ├── MstProjectService.java
+│       ├── MstSystemService.java
+│       ├── OllamaService.java
+│       ├── McpClientService.java
+│       └── impl/
+│           ├── TodoListServiceImpl.java
+│           ├── MMenuServiceImle.java
+│           ├── MstCodeServiceImpl.java
+│           ├── MstProjectServiceImpl.java
+│           ├── MstSystemServiceImpl.java
+│           ├── OllamaServiceImpl.java
+│           └── McpClientServiceImpl.java
+└── src/main/resources/
+    ├── application.yml                 # Spring Boot設定
+    ├── db.properties                   # DB接続設定
+    └── sql/                            # MyBatis XMLマッパー
+        ├── TodoListMapper.xml
+        ├── MMenuMapper.xml
+        ├── MCodeMapper.xml
+        ├── MProjectMapper.xml
+        ├── MSystemMapper.xml
+        └── MemoPadMapper.xml
+
+
+--------------------------------------------------------------------------------
+3-2. 技術スタック（バックエンド）
+--------------------------------------------------------------------------------
+
+  実行環境        : Java 17
+  フレームワーク  : Spring Boot 3.5.10
+  ビルドツール    : Gradle
+  デプロイ形式    : WAR (backend.war) / 組み込みTomcat
+  ORMフレームワーク: MyBatis 3 (Spring Boot Starter 3.0.3)
+  コード生成      : MyBatis Generator 1.4.2
+  データベース    : MySQL 8 (com.mysql:mysql-connector-j)
+  ユーティリティ  : Lombok（アノテーションベースのgetter/setter生成）
+  HTTPクライアント: RestTemplate（外部サービス連携）
+  外部AIサービス  : Ollama (llama3モデル、localhost:11434)
+
+
+--------------------------------------------------------------------------------
+3-3. APIエンドポイント一覧
+--------------------------------------------------------------------------------
+
+ベースURL: http://localhost:8080
+
+[ユーザー・認証]
+  POST /api/userLogin
+    説明    : ユーザーログイン
+    リクエスト: UserForm { id: string, name: string, password: string }
+    レスポンス: "OK"
+
+[メニュー]
+  POST /api/menuList
+    説明    : メニューリスト取得
+    リクエスト: MenuListDao { id, name, url }
+    レスポンス: List<MenuListDao>
+
+[TODOリスト]
+  POST /api/todoList
+    説明    : TODOリスト全件取得（システム名・プロジェクト名・コード名を結合）
+    リクエスト: なし（空ボディ）
+    レスポンス: List<TodoListDataDto>
+      - systemCd, projectCd, ticketNo (複合主キー)
+      - systemName, projectName (マスタから結合)
+      - statusCd, statusNm (進捗状態コード・名称)
+      - deployCd, deployNm (デプロイ状態コード・名称)
+      - revisionNo, note, biko, yukoFlag
+      - insDate, insUserId, updDate, updUserId
+
+  POST /api/todoRegister
+    説明    : TODOリスト登録・更新（一括保存）
+    リクエスト: List<TodoListDataDto>
+    レスポンス: { status: "OK", message: "登録完了" }
+
+[マスタ管理]
+  POST /api/getMstSystemCbbList
+    説明    : システムマスタ コンボボックス用リスト取得
+    リクエスト: なし
+    レスポンス: List<MSystemDto> { cd, systemName }
+
+  POST /api/getMstProjectCbbList
+    説明    : プロジェクトマスタ コンボボックス用リスト取得（システムコードでフィルタ）
+    リクエスト: MProjectDto { systemCd, cd, projectName }
+    レスポンス: List<MProjectDto> { systemCd, cd, projectName }
+
+  POST /api/getMstCodeCbbList
+    説明    : コードマスタ コンボボックス用リスト取得（グループコードでフィルタ）
+    リクエスト: MCodeDto { grCd, cd, cdName }
+    レスポンス: List<MCodeDto> { grCd, cd, cdName }
+      - grCd="001" : 進捗状態コード
+      - grCd="002" : デプロイ状態コード
+
+[AI連携]
+  POST /mcp/ask
+    説明    : Ollama AIへの問い合わせ（MCPエンドポイント）
+    リクエスト: { prompt: string }
+    レスポンス: { answer: string }
+
+  GET /api/test5?prompt={prompt}
+    説明    : Ollama AIへの直接問い合わせ（テスト用）
+    リクエスト: クエリパラメータ prompt
+    レスポンス: AIの生成テキスト
+
+  GET /api/test/ai
+    説明    : McpClientServiceのテスト
+    レスポンス: AIの応答テキスト
+
+[テスト用エンドポイント]
+  POST /api/test   → "OK" を返す
+  POST /api/test2  → "OK" を返す
+  POST /api/test3  → メニュー件数を含む文字列
+  POST /api/test4  → List<MenuListDao>
+
+
+--------------------------------------------------------------------------------
+3-4. データベースモデル
+--------------------------------------------------------------------------------
+
+【TODO_LIST テーブル】（複合主キー: systemCd + projectCd + ticketNo）
+  カラム名      | 型        | 説明
+  --------------|-----------|----------------------------------
+  systemCd      | VARCHAR   | システムコード (FK → M_SYSTEM)
+  projectCd     | VARCHAR   | プロジェクトコード (FK → M_PROJECT)
+  ticketNo      | VARCHAR   | チケット番号
+  revisionNo    | VARCHAR   | リビジョン番号
+  statusCd      | VARCHAR   | 進捗状態コード (FK → M_CODE grCd=001)
+  deployCd      | VARCHAR   | デプロイ状態コード (FK → M_CODE grCd=002)
+  note          | VARCHAR   | 内容
+  biko          | VARCHAR   | 備考
+  yukoFlag      | CHAR(1)   | 有効フラグ ("0"=無効, "1"=有効)
+  insDate       | TIMESTAMP | 登録日時
+  insUserId     | VARCHAR   | 登録ユーザーID
+  updDate       | TIMESTAMP | 更新日時
+  updUserId     | VARCHAR   | 更新ユーザーID
+
+【M_MENU テーブル】（主キー: id）
+  カラム名  | 型      | 説明
+  ----------|---------|------------------
+  id        | VARCHAR | メニューID
+  name      | VARCHAR | メニュー名
+  url       | VARCHAR | 遷移先URL
+  biko      | VARCHAR | 備考
+  yukoFlag  | CHAR(1) | 有効フラグ
+
+【M_SYSTEM テーブル】（主キー: cd）
+  カラム名    | 型        | 説明
+  ------------|-----------|------------------
+  cd          | VARCHAR   | システムコード
+  systemName  | VARCHAR   | システム名
+  note        | VARCHAR   | 内容
+  biko        | VARCHAR   | 備考
+  yukoFlag    | CHAR(1)   | 有効フラグ
+  insDate     | TIMESTAMP | 登録日時
+  insUserId   | VARCHAR   | 登録ユーザーID
+  updDate     | TIMESTAMP | 更新日時
+  updUserId   | VARCHAR   | 更新ユーザーID
+
+【M_PROJECT テーブル】（複合主キー: systemCd + cd）
+  カラム名     | 型        | 説明
+  -------------|-----------|----------------------------------
+  systemCd     | VARCHAR   | システムコード (FK → M_SYSTEM)
+  cd           | VARCHAR   | プロジェクトコード
+  projectName  | VARCHAR   | プロジェクト名
+  note         | VARCHAR   | 内容
+  biko         | VARCHAR   | 備考
+  yukoFlag     | CHAR(1)   | 有効フラグ
+  insDate      | TIMESTAMP | 登録日時
+  insUserId    | VARCHAR   | 登録ユーザーID
+  updDate      | TIMESTAMP | 更新日時
+  updUserId    | VARCHAR   | 更新ユーザーID
+
+【M_CODE テーブル】（複合主キー: grCd + cd）
+  カラム名  | 型      | 説明
+  ----------|---------|----------------------------------
+  grCd      | VARCHAR | グループコード
+             |         |   "001" = 進捗状態
+             |         |   "002" = デプロイ状態
+  cd        | VARCHAR | コード値
+  cdName    | VARCHAR | コード名称（表示用ラベル）
+  note      | VARCHAR | 内容
+  biko      | VARCHAR | 備考
+  yukoFlag  | CHAR(1) | 有効フラグ
+  insDate   | TIMESTAMP | 登録日時
+  insUserId | VARCHAR | 登録ユーザーID
+  updDate   | TIMESTAMP | 更新日時
+  updUserId | VARCHAR | 更新ユーザーID
+
+【MEMO_PAD テーブル】（複合主キー: MemoPadKey より継承）
+  カラム名  | 型      | 説明
+  ----------|---------|------------------
+  title     | VARCHAR | タイトル
+  biko      | VARCHAR | 備考
+  memo      | VARCHAR | メモ内容
+
+
+テーブルリレーション図:
+  M_SYSTEM ──< M_PROJECT (systemCd)
+  M_SYSTEM ──< TODO_LIST (systemCd)
+  M_PROJECT ──< TODO_LIST (systemCd + projectCd)
+  M_CODE(grCd=001) ──< TODO_LIST.statusCd
+  M_CODE(grCd=002) ──< TODO_LIST.deployCd
+
+
+--------------------------------------------------------------------------------
+3-5. サービス層
+--------------------------------------------------------------------------------
+
+[TodoListService / TodoListServiceImpl]
+  getListData()
+    → TODO_LIST を M_SYSTEM・M_PROJECT・M_CODE(2回) と結合して全件取得
+    → 結合SQL: INNER JOIN M_SYSTEM, INNER JOIN M_PROJECT,
+               LEFT JOIN M_CODE(statusCd), LEFT JOIN M_CODE(deployCd)
+  save(List<TodoListDataDto>)
+    → TODOリストの一括登録・更新
+    → 登録日時(insDate)・更新日時(updDate)・ユーザーIDを自動セット
+
+[MMenuService / MMenuServiceImle]
+  getListData()
+    → M_MENU からメニューリスト全件取得
+
+[MstSystemService / MstSystemServiceImpl]
+  getCbbList()
+    → M_SYSTEM からコンボボックス用データを取得
+
+[MstProjectService / MstProjectServiceImpl]
+  getCbbList(MProjectDto)
+    → systemCd でフィルタして M_PROJECT からリスト取得
+
+[MstCodeService / MstCodeServiceImpl]
+  getCbbList(MCodeDto)
+    → grCd でフィルタして M_CODE からリスト取得
+
+[OllamaService / OllamaServiceImpl]
+  generate(String model, String prompt)
+    → POST http://localhost:11434/api/generate （ストリーミング形式）
+    → RestTemplate を使用してローカルOllama APIを呼び出す
+  chat(String prompt)
+    → POST http://localhost:11434/v1/chat/completions
+    → llama3 モデルを使用（OpenAI互換API形式）
+
+[McpClientService / McpClientServiceImpl]
+  askServer(String prompt)
+    → 内部エンドポイント /mcp/ask を HTTP呼び出し（自己呼び出し）
+
+サービス設計パターン:
+  - インターフェースと実装クラスを分離（Interface-based）
+  - Lombok @RequiredArgsConstructor でコンストラクタインジェクション
+  - @Service アノテーションでSpring Bean登録
+
+
+--------------------------------------------------------------------------------
+3-6. 設定ファイル（バックエンド）
+--------------------------------------------------------------------------------
+
+[application.yml]
+  spring.datasource:
+    url      : jdbc:mysql://192.168.0.17:3306/tododb?useSSL=false&serverTimezone=Asia/Tokyo
+    username : yama
+    password : yama
+    driver   : com.mysql.cj.jdbc.Driver
+  mybatis:
+    mapper-locations    : classpath:/sql/**/*.xml
+    type-aliases-package: com.example.backend.db.entity
+    map-underscore-to-camel-case: true  # スネークケース⇔キャメルケース自動変換
+  server:
+    address : 0.0.0.0
+    port    : 8080
+  logging.level.root: INFO
+
+[WebConfig.java (CORS設定)]
+  allowedOrigins : http://localhost:5173 (Vite開発サーバー)
+  allowedMethods : すべて許可
+  allowedHeaders : すべて許可
+  allowCredentials: true
+
+[build.gradle]
+  Java toolchain : 17
+  Spring Boot    : 3.5.10
+  MyBatis Starter: 3.0.3
+  MyBatis Generator: 1.4.2
+  成果物         : backend.war
+
+
+================================================================================
+4. フロントエンド詳細
+================================================================================
+
+--------------------------------------------------------------------------------
+4-1. プロジェクト構造
+--------------------------------------------------------------------------------
+
+frontend/
+├── package.json                    # NPM依存関係・スクリプト
+├── vite.config.ts                  # Viteバンドラー設定
+├── tsconfig.json                   # TypeScript設定（ルート）
+├── tsconfig.app.json               # TypeScript設定（アプリ）
+├── tsconfig.node.json              # TypeScript設定（Node用）
+├── eslint.config.js                # ESLint設定
+├── index.html                      # HTMLエントリポイント
+└── src/
+    ├── main.tsx                    # Reactエントリポイント
+    ├── App.tsx                     # メインコンポーネント（ルーティング定義）
+    ├── App.css                     # アプリスタイル
+    ├── index.css                   # グローバルスタイル
+    ├── pages/                      # ルートページコンポーネント
+    │   ├── LoginPage.tsx           # ログインページ
+    │   ├── Layout.tsx              # メインレイアウト（サイドバー + コンテンツ）
+    │   ├── TaskListPage.tsx        # TODOリスト管理ページ（メイン機能）
+    │   ├── MasterPage.tsx          # マスタデータページ（未実装）
+    │   ├── SideMenuPage.tsx        # サイドメニューページ（未実装）
+    │   ├── Layout.module.css       # レイアウトスタイル
+    │   └── LoginPage.module.css    # ログインページスタイル
+    ├── components/
+    │   └── Header.tsx              # ヘッダーコンポーネント
+    ├── types/
+    │   └── User.tsx                # Userインターフェース定義
+    ├── dto/
+    │   └── TodoListDto.tsx         # TodoListDTOインターフェース定義
+    └── constants/
+        └── const.tsx               # 定数（APIベースURL・ルートパス）
+
+
+--------------------------------------------------------------------------------
+4-2. 技術スタック（フロントエンド）
+--------------------------------------------------------------------------------
+
+  言語           : TypeScript 5.7.2
+  フレームワーク : React 19.0.0
+  ルーティング   : React Router DOM 7.13.0
+  UIライブラリ   : Material-UI (MUI) 7.3.7
+  CSS-in-JS      : @emotion/react 11.14.0 / @emotion/styled 11.14.1
+  ビルドツール   : Vite 6.2.0 (SWCコンパイラ使用)
+  Linter         : ESLint 9.21.0 (typescript-eslint)
+  レイアウト     : react-resizable-panels 4.6.0 / react-split 2.0.14
+  HTTPクライアント: Fetch API (標準ブラウザAPI)
+  開発サーバー   : http://localhost:5173
+
+
+--------------------------------------------------------------------------------
+4-3. 画面・コンポーネント一覧
+--------------------------------------------------------------------------------
+
+[ルーティング構造 (App.tsx)]
+  /                       → LoginPage       ログインページ
+  /Layout                 → Layout          メインレイアウト
+  /Layout/SideMenuPage    → SideMenuPage    サイドメニューページ（未実装）
+  /Layout/MasterPage      → MasterPage      マスタデータページ（未実装）
+  /Layout/TaskListPage    → TaskListPage    TODOリスト管理ページ
+
+---
+
+[LoginPage.tsx] ログインページ
+  機能:
+    - ユーザー名・パスワード入力フォーム
+    - POST /api/userLogin を呼び出し
+    - レスポンスが "OK" であれば /Layout へ遷移
+    - MUI Card コンポーネントでフォームレイアウト
+  状態:
+    - id (string): ユーザー名
+    - password (string): パスワード
+  使用コンポーネント: MUI Card, TextField, Button
+  CSSモジュール: LoginPage.module.css
+
+---
+
+[Layout.tsx] メインレイアウト
+  機能:
+    - 左サイドバー (幅200px): メニュー動的表示
+    - 右コンテンツ領域 (flex): React Router Outlet
+    - POST /api/menuList でメニューリストを取得・表示
+    - React Router Link でページ遷移
+  状態:
+    - menuList (Menu[]): メニューデータ
+  インターフェース:
+    Menu { id: string, name: string, url: string }
+  CSSモジュール: Layout.module.css
+
+---
+
+[TaskListPage.tsx] TODOリスト管理ページ（メイン機能）
+  機能:
+    - TODOリストの一覧表示（MUI Table、sticky headers）
+    - 行の追加（+ボタン → handleAddRow）
+    - セル値の変更（handleChange）
+    - 登録ボタンで一括保存（handleRegister）
+      → 確認ダイアログ (window.confirm) 表示後 POST /api/todoRegister
+  テーブルカラム:
+    - プロジェクト   : Selectドロップダウン（プロジェクトマスタ）
+    - チケット番号   : TextField
+    - リビジョン番号 : TextField
+    - 進捗状態      : Selectドロップダウン（コードマスタ grCd=001）
+    - デプロイ状態   : Selectドロップダウン（コードマスタ grCd=002）
+    - 内容          : TextField
+    - 備考          : TextField
+  初期データ取得（useEffect）:
+    - getTaskList()           → POST /api/todoList
+    - getProjectList()        → POST /api/getMstProjectCbbList (systemCd="001")
+    - getProgressStatusName() → POST /api/getMstCodeCbbList (grCd="001")
+    - getDeployStatusName()   → POST /api/getMstCodeCbbList (grCd="002")
+  ローカルインターフェース:
+    MstProject { systemCd, cd, projectName }
+    MstCode    { grCd, cd, cdName }
+    TodoList   { systemCd, projectCd, ticketNo, systemName, projectName,
+                 statusNm, deployNm, revisionNo, statusCd, deployCd,
+                 note, biko, yukoFlag }
+  使用コンポーネント: MUI Table, TableContainer, Select, TextField, Button, Stack
+
+---
+
+[Header.tsx] ヘッダーコンポーネント
+  機能: アプリタイトル "TODOリスト" を表示
+  使用コンポーネント: MUI AppBar, Toolbar, Typography
+
+---
+
+[MasterPage.tsx] マスタデータページ
+  状態: 未実装（"ssss" テキスト表示のみ）
+
+---
+
+[SideMenuPage.tsx] サイドメニューページ
+  状態: 未実装（空のテーブル枠のみ）
+  備考: ヘッダー項目「システム、プロジェクト、チケット、ステータス」あり
+
+
+--------------------------------------------------------------------------------
+4-4. DTOインターフェース（フロントエンド）
+--------------------------------------------------------------------------------
+
+[TodoListDto.tsx]
+  TodoListKey {
+    systemCd  : string  // システムコード
+    projectCd : string  // プロジェクトコード
+    ticketNo  : string  // チケット番号
+  }
+
+  TodoListDto extends TodoListKey {
+    revisionNo  : string  // リビジョン番号
+    statusCd    : string  // 進捗状態コード
+    deployCd    : string  // デプロイ状態コード
+    note        : string  // 内容
+    biko        : string  // 備考
+    yukoFlag    : string  // 有効フラグ ("0" or "1")
+    insDate     : string  // 登録日時（ISO日時文字列）
+    insUserId   : string  // 登録ユーザーID
+    updDate     : string  // 更新日時（ISO日時文字列）
+    updUserId   : string  // 更新ユーザーID
+  }
+
+[types/User.tsx]
+  User {
+    user_id  : string
+    password : string
+  }
+
+[constants/const.tsx]
+  ROUTES {
+    LOGIN: "/"
+  }
+
+  SERVICE_URL {
+    BASE_URL: "http://localhost:8080/"
+  }
+
+
+--------------------------------------------------------------------------------
+4-5. 設定ファイル（フロントエンド）
+--------------------------------------------------------------------------------
+
+[vite.config.ts]
+  plugins: [@vitejs/plugin-react-swc]  // SWCコンパイラ使用
+
+[tsconfig.app.json]
+  strict       : true      // 厳格モード有効
+  target       : ES2020
+  jsx          : react-jsx
+  moduleResolution: bundler
+
+[package.json スクリプト]
+  dev     : vite               開発サーバー起動 (localhost:5173)
+  build   : tsc -b && vite build  TypeScriptコンパイル + 本番ビルド
+  lint    : eslint .           ESLintチェック
+  preview : vite preview       本番ビルドのプレビュー
+
+
+================================================================================
+5. バックエンド・フロントエンド連携
+================================================================================
+
+通信仕様:
+  - プロトコル  : HTTP/REST
+  - データ形式  : JSON
+  - Content-Type: application/json
+  - 全API通信  : POST メソッド使用（読み取り操作も含む）
+
+フロントエンドでのAPI呼び出しパターン:
+  const response = await fetch(`${SERVICE_URL.BASE_URL}api/xxxx`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(requestData),
+  });
+  const data = await response.json();
+
+エラーハンドリング:
+  - try/catch ブロックで例外捕捉
+  - 成功・失敗時に alert() でユーザーへ通知
+  - ログイン: レスポンステキストが "OK" かどうかで判定
+  - 登録前に window.confirm() で確認ダイアログ表示
+
+ポート対応:
+  フロントエンド (Vite開発サーバー) : localhost:5173
+  バックエンド (Spring Boot)        : localhost:8080
+  データベース (MySQL)               : 192.168.0.17:3306
+  AI (Ollama)                       : localhost:11434
+
+
+================================================================================
+6. アーキテクチャ概要
+================================================================================
+
+バックエンドアーキテクチャ（レイヤー構成）:
+  ┌─────────────────────────────────┐
+  │  Controller Layer (REST API)     │  リクエスト受付・バリデーション
+  ├─────────────────────────────────┤
+  │  Service Layer (Business Logic)  │  ビジネスロジック・トランザクション
+  ├─────────────────────────────────┤
+  │  Mapper Layer (MyBatis)          │  SQL実行・DBアクセス
+  ├─────────────────────────────────┤
+  │  Database (MySQL)                │  データ永続化
+  └─────────────────────────────────┘
+
+フロントエンドアーキテクチャ（コンポーネント構成）:
+  ┌─────────────────────────────────┐
+  │  App.tsx (Router)                │  ルーティング定義
+  ├─────────────────────────────────┤
+  │  Layout.tsx                      │  レイアウト（サイドバー + メイン）
+  ├────────────┬────────────────────┤
+  │ Header.tsx │  Page Components    │  各機能ページ
+  │            │  (TaskListPage etc) │
+  └────────────┴────────────────────┘
+
+設計上の特徴:
+  - MyBatisGeneratorによるエンティティ・マッパーの自動生成
+  - エンティティクラスに Key クラス（複合主キー）・Example クラス（クエリビルダー）を含む継承構造
+  - DTOパターン: エンティティを継承しフロントエンド表示用フィールドを追加
+  - インターフェースベースのサービス設計（差し替え容易）
+  - マスタデータはコードマスタ（M_CODE）に集約し、グループコードで種別分け
+  - 論理削除: yukoFlag カラムで有効/無効を管理
+  - 監査カラム: insDate, insUserId, updDate, updUserId を全テーブルに実装
+  - シンプルな状態管理: React useState/useEffect のみ使用（Reduxなし）
+  - AIとの連携: Ollama（ローカルLLM）を2種類のAPIで呼び出し
+
+開発中・未実装箇所:
+  - MasterPage.tsx  : マスタデータ管理画面（未実装）
+  - SideMenuPage.tsx: サイドメニュー画面（未実装）
+  - 認証・セッション管理: ログイン後のセッション保持機能なし
+  - MEMO_PAD テーブル: エンティティ・マッパーはあるが画面未実装
+
+================================================================================
+  以上
+================================================================================

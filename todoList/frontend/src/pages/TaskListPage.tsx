@@ -8,8 +8,9 @@ import TableRow from '@mui/material/TableRow';
 import Select from "@mui/material/Select";
 import { useEffect, useState } from "react";
 import { SERVICE_URL } from '../constants/const';
+import { Messages } from '../constants/messages';
 import Button from '@mui/material/Button';
-import { MenuItem, Stack, TextField } from '@mui/material';
+import { Checkbox, MenuItem, Stack, TextField } from '@mui/material';
 
 
 export interface MstProject {
@@ -22,6 +23,7 @@ export interface MstCode {
   grCd: string;
   cd: string;
   cdName: string;
+  color: string;
 }
 
 export interface TodoListKey {
@@ -32,7 +34,7 @@ export interface TodoListKey {
 }
 
 
-export interface TodoList extends TodoListKey {  
+export interface TodoList extends TodoListKey {
   systemName:string;
   projectName:string;
   statusNm:string;
@@ -51,9 +53,12 @@ export interface TodoList extends TodoListKey {
 */
 }
 
+/** エラー状態の型 */
+type RowErrors = { [idx: number]: { [field: string]: string } };
+
 /**
  * TODOリストの取得
- * @returns 
+ * @returns
  */
 const getTaskList = async (): Promise<TodoList[]>  => {
       const res = await fetch(SERVICE_URL.BASE_URL + "api/todoList", {
@@ -61,12 +66,12 @@ const getTaskList = async (): Promise<TodoList[]>  => {
         headers:{
           "Content-Type": "application/json",
         },
-        
+
       } );
 
       if(!res.ok){
         throw new Error("fetch failed");
-      }            
+      }
       return  await  res.json();
 }
 
@@ -88,13 +93,13 @@ const getProjectList = async (): Promise<MstProject[]>  => {
       if(!res.ok){
         throw new Error("fetch failed");
       }
-            
+
       return  await  res.json();
 }
 
 /**
  * 進捗状態の取得
- * @returns 
+ * @returns
  */
 const getProgressStatusName = async():Promise<MstCode[]> => {
 
@@ -109,7 +114,7 @@ const getProgressStatusName = async():Promise<MstCode[]> => {
           "Content-Type": "application/json",
         },
         body:JSON.stringify(data),
-      } );  
+      } );
       if(!res.ok){
         throw new Error("fetch failed");
       }
@@ -119,7 +124,7 @@ const getProgressStatusName = async():Promise<MstCode[]> => {
 
 /**
  * デプロイ状態の取得
- * @returns 
+ * @returns
  */
 const getDeployStatusName = async():Promise<MstCode[]> => {
       const data: MstCode = {
@@ -133,7 +138,7 @@ const getDeployStatusName = async():Promise<MstCode[]> => {
           "Content-Type": "application/json",
         },
         body:JSON.stringify(data),
-      } );  
+      } );
       if(!res.ok){
         throw new Error("fetch failed");
       }
@@ -142,9 +147,30 @@ const getDeployStatusName = async():Promise<MstCode[]> => {
 }
 
 /**
+ * TODOリストの削除
+ * @param tasks 削除対象リスト
+ * @returns 処理結果
+ */
+const deleteTask = async (tasks: TodoList[]) => {
+  const res = await fetch(SERVICE_URL.BASE_URL + "api/todoDelete", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(tasks),
+  });
+
+  if (!res.ok) {
+    throw new Error("fetch failed");
+  }
+
+  return await res.json();
+};
+
+/**
  * TODOリストの登録
- * @param tasks 
- * @returns 
+ * @param tasks
+ * @returns
  */
 const createTask = async (tasks:TodoList[]) => {
   const res = await fetch(SERVICE_URL.BASE_URL + "api/todoRegister", {
@@ -158,20 +184,45 @@ const createTask = async (tasks:TodoList[]) => {
   if(!res.ok){
     throw new Error("fetch failed");
   }
-        
+
   return  await  res.json();
 }
 
 
 /**
  * TODOリストのページ
- * @returns 
+ * @returns
+ */
+/**
+ * 行を一意に識別するキーを生成する
+ * @param row TODOリスト行
+ * @returns 複合キー文字列
+ */
+const getRowKey = (row: TodoList): string => {
+  return `${row.systemCd}_${row.projectCd}_${row.ticketNo}`;
+};
+
+/**
+ * TODOリストのページ
+ * @returns
  */
 const TaskListPage = () => {
   const [projectsCodes, setProjectsCodes] = useState<MstProject[]>([]);
   const [statusCodes, setStatusCodes] = useState<MstCode[]>([]);
   const [deployCodes, setDeployCodes] = useState<MstCode[]>([]);
   const [tasks, setTasks] = useState<TodoList[]>([]);
+  /** 選択行のキーセット（マルチ選択削除用） */
+  const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
+
+  /** 絞込み入力値 */
+  const [filterProjectCd, setFilterProjectCd] = useState("");
+  const [filterStatusCd, setFilterStatusCd] = useState("");
+  const [filterDeployCd, setFilterDeployCd] = useState("");
+  /** 適用済み絞込み条件 */
+  const [appliedFilter, setAppliedFilter] = useState({ projectCd: "", statusCd: "", deployCd: "" });
+
+  /** インラインエラー状態 */
+  const [taskErrors, setTaskErrors] = useState<RowErrors>({});
 
   /**
    * TODOリストの初期化
@@ -186,7 +237,7 @@ const TaskListPage = () => {
       const deployCdList = await getDeployStatusName();
       setDeployCodes(deployCdList);
       const projectList = await getProjectList();
-      setProjectsCodes(projectList); 
+      setProjectsCodes(projectList);
 
     }
     try{
@@ -199,15 +250,32 @@ const TaskListPage = () => {
   },[]);
 
   const handleRegister = async() => {
-    
+    // インラインエラーチェック
+    const hasErrors = Object.values(taskErrors).some(row => Object.keys(row).length > 0);
+    if (hasErrors) {
+      alert("入力内容にエラーがあります。確認してください。");
+      return;
+    }
     try{
       const entry = window.confirm("登録してもよろしいですか？");
       if(!entry){
         return;
-      } 
-      const result = await createTask(tasks);
+      }
+      // プロジェクトCDとチケット番号が入力済みの行のみ登録対象とする
+      const saveTargets = tasks.filter(
+        t => t.projectCd.trim() !== "" && t.ticketNo.trim() !== ""
+      );
+      if (saveTargets.length === 0) {
+        alert("登録可能なデータがありません。プロジェクトとチケット番号を入力してください。");
+        return;
+      }
+      const result = await createTask(saveTargets);
       if (result.status === "OK") {
         alert("登録しました。");
+        // 登録完了後に再描画
+        const newList = await getTaskList();
+        setTasks(newList);
+        setTaskErrors({});
       } else {
         alert("登録に失敗しました");
       }
@@ -215,13 +283,13 @@ const TaskListPage = () => {
     }catch(e){
       alert("登録に失敗しました。");
     }
-  } 
+  }
 
   /**
    * TODOリストの行追加処理
    */
   const handleAddRow = () => {
-    setTasks([...tasks, { 
+    setTasks([...tasks, {
       systemCd: crypto.randomUUID(),
       projectCd: crypto.randomUUID(),
       ticketNo: "",
@@ -240,9 +308,9 @@ const TaskListPage = () => {
 
   /**
    * 入力データを反映する処理
-   * @param index 
-   * @param field 
-   * @param value 
+   * @param index 行インデックス
+   * @param field 変更フィールド
+   * @param value 変更値
    */
   const handleChange  =  (
     index:number,
@@ -252,24 +320,168 @@ const TaskListPage = () => {
     const newTasks = [...tasks];
     newTasks[index][field] = value;
     setTasks(newTasks);
+
+    // フィールドバリデーション
+    let errMsg = "";
+    if (field === "ticketNo" && value.length > Messages.maxLength.ticketNo) {
+      errMsg = Messages.error.todo.ticketNo;
+    } else if (field === "revisionNo" && value.length > Messages.maxLength.revisionNo) {
+      errMsg = Messages.error.todo.revisionNo;
+    } else if (field === "note" && value.length > Messages.maxLength.note) {
+      errMsg = Messages.error.todo.note;
+    } else if (field === "biko" && value.length > Messages.maxLength.biko) {
+      errMsg = Messages.error.todo.biko;
+    }
+
+    setTaskErrors(prev => {
+      const rowErrs = { ...(prev[index] || {}) };
+      if (errMsg) {
+        rowErrs[field] = errMsg;
+      } else {
+        delete rowErrs[field];
+      }
+      if (Object.keys(rowErrs).length === 0) {
+        const next = { ...prev };
+        delete next[index];
+        return next;
+      }
+      return { ...prev, [index]: rowErrs };
+    });
   }
+
+  /**
+   * 行のチェックボックス変更処理
+   * @param key 行の一意キー
+   * @param checked チェック状態
+   */
+  const handleSelectRow = (key: string, checked: boolean) => {
+    const newKeys = new Set(selectedKeys);
+    if (checked) {
+      newKeys.add(key);
+    } else {
+      newKeys.delete(key);
+    }
+    setSelectedKeys(newKeys);
+  };
+
+  /**
+   * 絞込み条件を適用する処理
+   */
+  const handleApplyFilter = () => {
+    setAppliedFilter({ projectCd: filterProjectCd, statusCd: filterStatusCd, deployCd: filterDeployCd });
+    setSelectedKeys(new Set());
+  };
+
+  /** 絞込み条件で絞り込んだ表示用タスクリスト */
+  const filteredTasks = tasks.filter(t =>
+    (appliedFilter.projectCd === "" || t.projectCd === appliedFilter.projectCd) &&
+    (appliedFilter.statusCd === "" || t.statusCd === appliedFilter.statusCd) &&
+    (appliedFilter.deployCd === "" || t.deployCd === appliedFilter.deployCd)
+  );
+
+  /**
+   * 全選択・全解除処理（絞込み結果に対して適用）
+   * @param checked チェック状態
+   */
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedKeys(new Set(filteredTasks.map(getRowKey)));
+    } else {
+      setSelectedKeys(new Set());
+    }
+  };
+
+  /**
+   * 選択行の削除処理
+   * DB登録済み行はAPIで物理削除、未登録行はUIから除去する
+   */
+  const handleDelete = async () => {
+    if (selectedKeys.size === 0) {
+      alert("削除する行を選択してください。");
+      return;
+    }
+    const entry = window.confirm(`選択した ${selectedKeys.size} 件を削除してもよろしいですか？`);
+    if (!entry) {
+      return;
+    }
+    try {
+      // 選択行を分類：DB登録済み（ticketNoあり）と未登録（追加のみ）
+      const selectedRows = tasks.filter(t => selectedKeys.has(getRowKey(t)));
+      const savedRows = selectedRows.filter(t => t.ticketNo !== "");
+
+      // DB登録済み行のみAPI削除
+      if (savedRows.length > 0) {
+        await deleteTask(savedRows);
+      }
+
+      // UIから選択行を除去
+      setTasks(tasks.filter(t => !selectedKeys.has(getRowKey(t))));
+      setSelectedKeys(new Set());
+      setTaskErrors({});
+      alert("削除しました。");
+    } catch (e) {
+      alert("削除に失敗しました。");
+    }
+  };
 
 
   return (
     <div>
-      <Stack direction="row" spacing={2} sx={{mb:2}}>
+      {/* 絞込みエリア */}
+      <Stack direction="row" spacing={2} sx={{ mb: 1 }} alignItems="center">
+        <Select value={filterProjectCd} size="small" displayEmpty sx={{ minWidth: 150 }}
+          onChange={(e) => setFilterProjectCd(e.target.value)}>
+          <MenuItem value="">プロジェクト（全て）</MenuItem>
+          {projectsCodes.map(project => (
+            <MenuItem key={project.cd} value={project.cd}>{project.projectName}</MenuItem>
+          ))}
+        </Select>
+        <Select value={filterStatusCd} size="small" displayEmpty sx={{ minWidth: 150 }}
+          onChange={(e) => setFilterStatusCd(e.target.value)}>
+          <MenuItem value="">進捗状態（全て）</MenuItem>
+          {statusCodes.map(code => (
+            <MenuItem key={code.cd} value={code.cd}>{code.cdName}</MenuItem>
+          ))}
+        </Select>
+        <Select value={filterDeployCd} size="small" displayEmpty sx={{ minWidth: 150 }}
+          onChange={(e) => setFilterDeployCd(e.target.value)}>
+          <MenuItem value="">デプロイ状態（全て）</MenuItem>
+          {deployCodes.map(code => (
+            <MenuItem key={code.cd} value={code.cd}>{code.cdName}</MenuItem>
+          ))}
+        </Select>
+        <Button variant="outlined" color="primary" onClick={handleApplyFilter}>
+          絞込
+        </Button>
+      </Stack>
+      <Stack direction="row" spacing={2} sx={{mb:2}} alignItems="center">
         <Button variant="contained" color="primary" onClick={handleRegister}>
           登録
         </Button>
         <Button variant="contained" color="primary" onClick={handleAddRow}>
           追加
         </Button>
+        <Button variant="contained" color="error" onClick={handleDelete}
+          disabled={selectedKeys.size === 0}>
+          削除
+        </Button>
+        {/* 選択件数表示 */}
+        {selectedKeys.size > 0 && (
+          <span style={{ color: "#d32f2f" }}>{selectedKeys.size} 件選択中</span>
+        )}
       </Stack>
-      <Paper sx={{ width: "70%", overflow: "hidden" }}>
+      <Paper sx={{ width: "100%", overflow: "hidden" }}>
         <TableContainer component={Paper} sx={{ maxHeight: 400 ,overflow: "auto"}}>
-          <Table sx={{ minWidth: "70%",tableLayout: "fixed" }} aria-label="simple table" stickyHeader>
+          <Table sx={{ minWidth: 700 }} aria-label="simple table" stickyHeader>
             <TableHead>
               <TableRow>
+                <TableCell padding="checkbox" sx={{ backgroundColor: "#90bef3dc" }}>
+                  <Checkbox
+                    indeterminate={selectedKeys.size > 0 && selectedKeys.size < filteredTasks.length}
+                    checked={filteredTasks.length > 0 && selectedKeys.size === filteredTasks.length}
+                    onChange={(e) => handleSelectAll(e.target.checked)}
+                  />
+                </TableCell>
                 <TableCell align="center" sx={{width: 150, borderRight: "1px solid #4e4c4c" ,backgroundColor:"#90bef3dc"}}>プロジェクト</TableCell>
                 <TableCell align="center" sx={{ width: 150, borderRight: "1px solid #4e4c4c" ,backgroundColor:"#90bef3dc"}}>チケット番号</TableCell>
                 <TableCell align="center" sx={{ width: 150, borderRight: "1px solid #4e4c4c" ,backgroundColor:"#90bef3dc"}}>リビジョン番号</TableCell>
@@ -280,14 +492,33 @@ const TaskListPage = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {tasks.map((row) => (
+              {filteredTasks.map((row) => {
+                // 絞込み結果でのインデックスではなく、tasks配列内の実インデックスを使用する
+                const index = tasks.indexOf(row);
+                // 進捗状態・デプロイ状態のカラーコードを取得
+                const statusColor = statusCodes.find(s => s.cd === row.statusCd)?.color ?? "";
+                const deployColor = deployCodes.find(d => d.cd === row.deployCd)?.color ?? "";
+                // 行背景色：デプロイ状態の色を優先、なければ進捗状態の色
+                const rowBgColor = deployColor || statusColor || "inherit";
+                // 進捗状態セルの背景色：デプロイ色が存在する場合は進捗色で上書き
+                const statusCellBgColor = deployColor && statusColor ? statusColor : rowBgColor;
+                return (
                 <TableRow
                   key={row.projectCd + row.ticketNo}
-                  sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
+                  sx={{
+                    '&:last-child td, &:last-child th': { border: 0 },
+                    backgroundColor: rowBgColor,
+                  }}
                 >
+                  <TableCell padding="checkbox">
+                    <Checkbox
+                      checked={selectedKeys.has(getRowKey(row))}
+                      onChange={(e) => handleSelectRow(getRowKey(row), e.target.checked)}
+                    />
+                  </TableCell>
                   <TableCell component="th" scope="row">
                     <Select value={row.projectCd} size='small' fullWidth
-                            onChange={(e) => handleChange(tasks.indexOf(row), "projectCd", e.target.value)}>
+                            onChange={(e) => handleChange(index, "projectCd", e.target.value)}>
                       <MenuItem value="">選択してください</MenuItem>
                       {projectsCodes.map(project => (
                         <MenuItem key={project.cd} value={project.cd}>{project.projectName}</MenuItem>
@@ -297,18 +528,22 @@ const TaskListPage = () => {
                   <TableCell align="right">
                     <TextField variant='outlined' size='small'
                       value={row.ticketNo}
-                      onChange={(e) => handleChange(tasks.indexOf(row), "ticketNo", e.target.value)}
+                      error={!!taskErrors[index]?.ticketNo}
+                      helperText={taskErrors[index]?.ticketNo}
+                      onChange={(e) => handleChange(index, "ticketNo", e.target.value)}
                     />
                   </TableCell>
                   <TableCell align="right">
                     <TextField variant='outlined' size='small' sx={{width:"100%"}}
                       value={row.revisionNo}
-                      onChange={(e) => handleChange(tasks.indexOf(row), "revisionNo", e.target.value)}
+                      error={!!taskErrors[index]?.revisionNo}
+                      helperText={taskErrors[index]?.revisionNo}
+                      onChange={(e) => handleChange(index, "revisionNo", e.target.value)}
                     />
                   </TableCell>
-                  <TableCell align="center"> 
-                    <Select value={row.statusCd} size='small' fullWidth 
-                            onChange={(e) => handleChange(tasks.indexOf(row), "statusCd", e.target.value)}>
+                  <TableCell align="center" sx={{ backgroundColor: statusCellBgColor }}>
+                    <Select value={row.statusCd} size='small' fullWidth
+                            onChange={(e) => handleChange(index, "statusCd", e.target.value)}>
                       <MenuItem value="">選択してください</MenuItem>
                       {statusCodes.map(code => (
                         <MenuItem key={code.cd} value={code.cd}>{code.cdName}</MenuItem>
@@ -317,7 +552,7 @@ const TaskListPage = () => {
                   </TableCell>
                   <TableCell align="center">
                     <Select value={row.deployCd} size='small' fullWidth
-                            onChange={(e) => handleChange(tasks.indexOf(row), "deployCd", e.target.value)}>
+                            onChange={(e) => handleChange(index, "deployCd", e.target.value)}>
                       <MenuItem value="">選択してください</MenuItem>
                       {deployCodes.map(code => (
                         <MenuItem key={code.cd} value={code.cd}>{code.cdName}</MenuItem>
@@ -328,17 +563,22 @@ const TaskListPage = () => {
                   <TableCell align="right">
                     <TextField variant='outlined' size='small'
                       value={row.note} sx={{width:"100%"}}
-                      onChange={(e) => handleChange(tasks.indexOf(row), "note", e.target.value)}
+                      error={!!taskErrors[index]?.note}
+                      helperText={taskErrors[index]?.note}
+                      onChange={(e) => handleChange(index, "note", e.target.value)}
                     />
                   </TableCell>
                   <TableCell align="right">
                     <TextField variant='outlined' size='small' sx={{width:"100%"}}
                       value={row.biko}
-                      onChange={(e) => handleChange(tasks.indexOf(row), "biko", e.target.value)}
+                      error={!!taskErrors[index]?.biko}
+                      helperText={taskErrors[index]?.biko}
+                      onChange={(e) => handleChange(index, "biko", e.target.value)}
                     />
                   </TableCell>
                 </TableRow>
-              ))}
+                );
+              })}
             </TableBody>
           </Table>
         </TableContainer>
