@@ -90,13 +90,20 @@ const TaskListPage = () => {
 
   },[]);
 
-  const handleRegister = () => {
+  const handleRegister = async() => {
     
     try{
-    
+      const entry = window.confirm("登録してもよろしいですか？");
+      if(!entry){
+        return;
+      } 
+      const result = await createTask(tasks);
+      if (result.status === "OK") {
+        alert("登録しました。");
+      } else {
+        alert("登録に失敗しました");
+      }
 
-      createTask(tasks);
-      alert("登録しました。");
     }catch(e){
       alert("登録に失敗しました。");
     }

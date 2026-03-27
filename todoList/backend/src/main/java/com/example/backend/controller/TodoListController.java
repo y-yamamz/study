@@ -1,8 +1,11 @@
 package com.example.backend.controller;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.beans.BeanUtils;
+import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -14,7 +17,6 @@ import com.example.backend.dto.TodoListDataDto;
 import lombok.RequiredArgsConstructor;
 import com.example.backend.service.TodoListService;
 import org.springframework.web.bind.annotation.RequestBody;
-
 
 @RestController
 @RequestMapping("/api")
@@ -29,21 +31,24 @@ public class TodoListController {
         return lst;
     }
 
-
     @PostMapping("/todoRegister")
     @Transactional
-    public void register(@RequestBody List<TodoListDataDto> dtoList) {
+    public ResponseEntity<Map<String, Object>> register(@RequestBody List<TodoListDataDto> dtoList) {
         String val = "";
-        for(TodoListDataDto dto : dtoList) {
+        todoListService.save(dtoList);
+        for (TodoListDataDto dto : dtoList) {
             TodoList entity = new TodoList();
             BeanUtils.copyProperties(dto, entity);
-            //todoListService.save(entity);
+            // todoListService.save(entity);
 
             val += "note: " + dto.getNote() + ", ";
         }
-        
 
+        Map<String, Object> res = new HashMap<>();
+        res.put("status", "OK");
+        res.put("message", "登録完了");
 
+        return ResponseEntity.ok(res);
     }
 
 }

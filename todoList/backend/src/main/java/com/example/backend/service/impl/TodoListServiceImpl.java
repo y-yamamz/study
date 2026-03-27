@@ -29,14 +29,14 @@ public class TodoListServiceImpl implements TodoListService {
 
     @Override
     public void save(List<TodoListDataDto> entryList) {
-        for(TodoListDataDto dto : entryList) {
+        for (TodoListDataDto dto : entryList) {
             TodoList entity = new TodoList();
             BeanUtils.copyProperties(dto, entity);
             TodoList selDto = todoListMapper.selectByPrimaryKey(entity);
-            if(selDto != null) {
-                //更新
-                todoListMapper.updateByPrimaryKey(entity);
-            }else{
+            if (selDto != null) {
+                // 更新
+                todoListMapper.updateByPrimaryKeySelective(entity);
+            } else {
                 todoListMapper.insert(entity);
             }
         }
