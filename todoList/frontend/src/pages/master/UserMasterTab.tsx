@@ -7,25 +7,40 @@ import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Button from '@mui/material/Button';
-import { Checkbox, MenuItem, Select, Stack, TextField } from '@mui/material';
+import { Box, Checkbox, Chip, MenuItem, Select, Stack, TextField, Typography } from '@mui/material';
 import {
-  MstUser,
-  RowErrors,
-  getUserList,
-  saveUserList,
-  deleteUserList,
-  updateRowError,
+  MstUser, RowErrors, getUserList, saveUserList, deleteUserList, updateRowError,
 } from '../../common/masterCommon';
 import { Messages } from '../../constants/messages';
 
-const ROLE_OPTIONS = [
-  { value: 'USER',  label: '一般ユーザー' },
-  { value: 'ADMIN', label: '管理者' },
-];
+/** 既存ユーザーのパスワード未変更を示すセンチネル値（フロント内部のみ使用） */
+const EXISTING_PW = '__EXISTING__';
 
-/**
- * ユーザーマスタ管理タブ
- */
+const ROLE_OPTIONS = [
+  { value:'USER',  label:'一般ユーザー' },
+  { value:'ADMIN', label:'管理者' },
+];
+const COLORS = ['#8b5cf6','#6366f1'];
+const thSx = {
+  background:'linear-gradient(135deg,rgba(139,92,246,0.07),rgba(99,102,241,0.05)) !important',
+  borderBottom:'2px solid rgba(139,92,246,0.18) !important',
+  fontSize:'0.72rem', fontWeight:700, letterSpacing:'0.06em',
+  textTransform:'uppercase' as const, color:'#7c3aed', py:1.5,
+};
+const inputSx = {
+  '& .MuiOutlinedInput-root':{ fontSize:'0.82rem', borderRadius:'10px', backgroundColor:'#faf5ff',
+    '& fieldset':{ borderColor:'rgba(139,92,246,0.22)' },
+    '&:hover fieldset':{ borderColor:'rgba(139,92,246,0.5)' },
+    '&.Mui-focused fieldset':{ borderColor:'#8b5cf6', borderWidth:2 },
+  },
+};
+const selSx = {
+  fontSize:'0.82rem', borderRadius:'10px', backgroundColor:'#faf5ff',
+  '& .MuiOutlinedInput-notchedOutline':{ borderColor:'rgba(139,92,246,0.22)' },
+  '&:hover .MuiOutlinedInput-notchedOutline':{ borderColor:'rgba(139,92,246,0.5)' },
+  '&.Mui-focused .MuiOutlinedInput-notchedOutline':{ borderColor:'#8b5cf6', borderWidth:2 },
+};
+
 const UserMasterTab = () => {
   const [users, setUsers] = useState<MstUser[]>([]);
   const [isSaving, setIsSaving] = useState(false);
@@ -33,228 +48,134 @@ const UserMasterTab = () => {
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
   const [errors, setErrors] = useState<RowErrors>({});
 
-  useEffect(() => {
-    const init = async () => {
-      const list = await getUserList();
-      setUsers(list);
-    };
-    try { init(); } catch (_) { /* error */ }
-  }, []);
+  useEffect(()=>{
+    getUserList()
+      .then(list => setUsers(list.map(u => ({ ...u, plainPassword: EXISTING_PW }))))
+      .catch(()=>{});
+  },[]);
 
-  /** 行選択 */
-  const handleSelect = (key: string, checked: boolean) => {
-    const next = new Set(selectedKeys);
-    checked ? next.add(key) : next.delete(key);
-    setSelectedKeys(next);
+  const handleSelect=(k:string,c:boolean)=>{ const n=new Set(selectedKeys); c?n.add(k):n.delete(k); setSelectedKeys(n); };
+  const handleSelectAll=(c:boolean)=>setSelectedKeys(c?new Set(users.map(u=>u.userId)):new Set());
+  const handleAdd=()=>{ setUsers([...users,{userId:'',userName:'',passwordHash:'',plainPassword:'',roleCd:'USER',email:'',yukoFlag:'1'}]); setIsChanged(true); };
+  const handleChange=(i:number,f:keyof MstUser,v:string)=>{
+    const nl=[...users]; nl[i]={...nl[i],[f]:v}; setUsers(nl); setIsChanged(true);
+    let e='';
+    if(f==='userId'&&v.length>Messages.maxLength.userId) e=Messages.error.user.userId;
+    else if(f==='userName'&&v.length>Messages.maxLength.userName) e=Messages.error.user.userName;
+    else if(f==='email'&&v.length>Messages.maxLength.email) e=Messages.error.user.email;
+    else if(f==='plainPassword'&&v!==EXISTING_PW&&v.length>0&&v.length<Messages.maxLength.plainPasswordMin) e=Messages.error.user.plainPassword;
+    updateRowError(setErrors,i,f,e);
   };
-
-  const handleSelectAll = (checked: boolean) => {
-    setSelectedKeys(checked ? new Set(users.map(u => u.userId)) : new Set());
+  const handleDelete=async()=>{
+    if(!selectedKeys.size) return;
+    if(!window.confirm(`選択した ${selectedKeys.size} 件を削除してもよろしいですか？`)) return;
+    try{ await deleteUserList(users.filter(u=>selectedKeys.has(u.userId)));
+      alert('削除しました。'); setUsers((await getUserList()).map(u=>({...u,plainPassword:EXISTING_PW}))); setSelectedKeys(new Set()); setErrors({});
+    }catch(_){ alert('削除に失敗しました。'); }
   };
-
-  /** 行追加 */
-  const handleAdd = () => {
-    setUsers([...users, {
-      userId: '',
-      userName: '',
-      passwordHash: '',
-      plainPassword: '',
-      roleCd: 'USER',
-      email: '',
-      yukoFlag: '1',
-    }]);
-    setIsChanged(true);
-  };
-
-  /** セル値変更 */
-  const handleChange = (index: number, field: keyof MstUser, value: string) => {
-    const newList = [...users];
-    newList[index] = { ...newList[index], [field]: value };
-    setUsers(newList);
-    setIsChanged(true);
-
-    let errMsg = '';
-    if (field === 'userId' && value.length > Messages.maxLength.userId) {
-      errMsg = Messages.error.user.userId;
-    } else if (field === 'userName' && value.length > Messages.maxLength.userName) {
-      errMsg = Messages.error.user.userName;
-    } else if (field === 'email' && value.length > Messages.maxLength.email) {
-      errMsg = Messages.error.user.email;
-    } else if (
-      field === 'plainPassword' &&
-      value.length > 0 &&
-      value.length < Messages.maxLength.plainPasswordMin
-    ) {
-      errMsg = Messages.error.user.plainPassword;
-    }
-    updateRowError(setErrors, index, field, errMsg);
-  };
-
-  /** 削除 */
-  const handleDelete = async () => {
-    if (selectedKeys.size === 0) return;
-    if (!window.confirm(`選択した ${selectedKeys.size} 件を削除してもよろしいですか？`)) return;
-    try {
-      const targets = users.filter(u => selectedKeys.has(u.userId));
-      await deleteUserList(targets);
-      alert('削除しました。');
-      const newList = await getUserList();
-      setUsers(newList);
-      setSelectedKeys(new Set());
-      setErrors({});
-    } catch (_) {
-      alert('削除に失敗しました。');
-    }
-  };
-
-  /** 登録 */
-  const handleRegister = async () => {
-    if (isSaving) return;
-    const hasErrors = Object.values(errors).some(row => Object.keys(row).length > 0);
-    if (hasErrors) {
-      alert('入力内容にエラーがあります。確認してください。');
-      return;
-    }
-    const saveTargets = users.filter(u => u.userId.trim() !== '' && u.userName.trim() !== '');
-    if (saveTargets.length === 0) {
-      alert('登録可能なデータがありません。ユーザーIDとユーザー名を入力してください。');
-      return;
-    }
-    // 新規行でパスワード未入力チェック
-    const newRows = saveTargets.filter(u => u.passwordHash === '' && (u.plainPassword ?? '').trim() === '');
-    if (newRows.length > 0) {
-      alert('新規ユーザーにはパスワードの入力が必要です。');
-      return;
-    }
-    if (!window.confirm('登録してもよろしいですか？')) return;
-    try {
+  const handleRegister=async()=>{
+    if(isSaving) return;
+    if(Object.values(errors).some(r=>Object.keys(r).length>0)){ alert('入力内容にエラーがあります。'); return; }
+    const t=users.filter(u=>u.userId.trim()!==''&&u.userName.trim()!=='');
+    if(!t.length){ alert('ユーザーIDとユーザー名を入力してください。'); return; }
+    if(t.some(u=>(u.plainPassword??'').trim()==='')){alert('パスワードを入力してください。'); return; }
+    if(!window.confirm('登録してもよろしいですか？')) return;
+    try{
       setIsSaving(true);
-      const result = await saveUserList(saveTargets);
-      if (result.status === 'OK') {
-        setIsChanged(false);
-        alert('登録しました。');
-        const newList = await getUserList();
-        setUsers(newList);
-        setErrors({});
-      } else {
-        alert('登録に失敗しました。');
-      }
-    } catch (_) {
-      alert('登録に失敗しました。');
-    } finally {
-      setIsSaving(false);
-    }
+      // センチネル値のままの場合はパスワード変更なしとして空文字に変換
+      const saveData=t.map(u=>({...u,plainPassword:u.plainPassword===EXISTING_PW?'':u.plainPassword}));
+      const res=await saveUserList(saveData);
+      if(res.status==='OK'){ setIsChanged(false); alert('登録しました。'); setUsers((await getUserList()).map(u=>({...u,plainPassword:EXISTING_PW}))); setErrors({}); }
+      else alert('登録に失敗しました。');
+    }catch(_){ alert('登録に失敗しました。'); }
+    finally{ setIsSaving(false); }
   };
 
   return (
-    <div>
-      <Stack direction="row" spacing={2} sx={{ mb: 2 }} alignItems="center">
-        <Button variant="contained" color="primary" onClick={handleRegister} disabled={isSaving}>
-          {isSaving ? '登録中...' : '登録'}
-        </Button>
-        <Button variant="contained" color="primary" onClick={handleAdd} disabled={isSaving}>
-          追加
-        </Button>
-        <Button variant="contained" color="error" onClick={handleDelete}
-          disabled={selectedKeys.size === 0}>
-          削除
-        </Button>
-        {selectedKeys.size > 0 && (
-          <span style={{ color: '#d32f2f' }}>{selectedKeys.size} 件選択中</span>
-        )}
-        {isChanged && (
-          <span style={{ color: '#d32f2f', fontWeight: 'bold' }}>変更されています</span>
-        )}
+    <Box>
+      <Stack direction="row" spacing={1.5} sx={{ mb:2.5 }} alignItems="center">
+        <Button variant="contained" size="small" onClick={handleRegister} disabled={isSaving}
+          sx={{ background:`linear-gradient(135deg,${COLORS[0]},${COLORS[1]})`, boxShadow:`0 4px 14px ${COLORS[0]}55`, px:2.5,
+            '&:hover':{ transform:'translateY(-2px)' },'&.Mui-disabled':{ opacity:0.5 } }}>
+          {isSaving?"登録中...":"✓ 登録"}</Button>
+        <Button variant="outlined" size="small" onClick={handleAdd} disabled={isSaving}
+          sx={{ borderColor:`${COLORS[0]}55`,color:COLORS[0],px:2.5,'&:hover':{ borderColor:COLORS[0],backgroundColor:`${COLORS[0]}10`,transform:'translateY(-2px)' } }}>+ 追加</Button>
+        <Button variant="contained" color="error" size="small" onClick={handleDelete} disabled={!selectedKeys.size}
+          sx={{ px:2.5,'&:hover':{ transform:'translateY(-2px)' } }}>✕ 削除</Button>
+        {selectedKeys.size>0&&<Typography sx={{ fontSize:'0.8rem',color:'#f43f5e',fontWeight:700 }}>{selectedKeys.size} 件選択中</Typography>}
+        {isChanged&&<Box sx={{ px:1.5,py:0.5,borderRadius:20,background:'rgba(245,158,11,0.1)',border:'1px solid rgba(245,158,11,0.25)' }}>
+          <Typography sx={{ fontSize:'0.75rem',color:'#f59e0b',fontWeight:700 }}>● 未保存の変更があります</Typography>
+        </Box>}
       </Stack>
-      <Paper sx={{ width: '100%', overflow: 'hidden' }}>
-        <TableContainer component={Paper} sx={{ maxHeight: 400, overflow: 'auto' }}>
-          <Table sx={{ minWidth: 900 }} aria-label="user table" stickyHeader>
-            <TableHead>
-              <TableRow>
-                <TableCell padding="checkbox" sx={{ backgroundColor: '#90bef3dc' }}>
-                  <Checkbox
-                    indeterminate={selectedKeys.size > 0 && selectedKeys.size < users.length}
-                    checked={users.length > 0 && selectedKeys.size === users.length}
-                    onChange={(e) => handleSelectAll(e.target.checked)}
-                  />
-                </TableCell>
-                <TableCell align="center" sx={{ width: 130, borderRight: '1px solid #4e4c4c', backgroundColor: '#90bef3dc' }}>ユーザーID</TableCell>
-                <TableCell align="center" sx={{ width: 160, borderRight: '1px solid #4e4c4c', backgroundColor: '#90bef3dc' }}>ユーザー名</TableCell>
-                <TableCell align="center" sx={{ width: 180, borderRight: '1px solid #4e4c4c', backgroundColor: '#90bef3dc' }}>
-                  パスワード
-                  <div style={{ fontSize: '0.7em', fontWeight: 'normal' }}>（変更する場合のみ入力）</div>
-                </TableCell>
-                <TableCell align="center" sx={{ width: 130, borderRight: '1px solid #4e4c4c', backgroundColor: '#90bef3dc' }}>ロール</TableCell>
-                <TableCell align="center" sx={{ width: 200, borderRight: '1px solid #4e4c4c', backgroundColor: '#90bef3dc' }}>メールアドレス</TableCell>
-                <TableCell align="center" sx={{ width: 100, backgroundColor: '#90bef3dc' }}>有効フラグ</TableCell>
-              </TableRow>
-            </TableHead>
+      <Box sx={{ borderRadius:'16px',overflow:'hidden',border:'1.5px solid rgba(139,92,246,0.15)',boxShadow:'0 2px 12px rgba(139,92,246,0.08)' }}>
+        <TableContainer component={Paper} elevation={0} sx={{ maxHeight:380,background:'transparent' }}>
+          <Table sx={{ minWidth:920 }} stickyHeader>
+            <TableHead><TableRow>
+              <TableCell padding="checkbox" sx={thSx}>
+                <Checkbox indeterminate={selectedKeys.size>0&&selectedKeys.size<users.length}
+                  checked={users.length>0&&selectedKeys.size===users.length}
+                  onChange={e=>handleSelectAll(e.target.checked)}
+                  sx={{ '&.Mui-checked,&.MuiCheckbox-indeterminate':{ color:'#8b5cf6' } }} />
+              </TableCell>
+              <TableCell align="center" sx={thSx}>ユーザーID</TableCell>
+              <TableCell align="center" sx={thSx}>ユーザー名</TableCell>
+              <TableCell align="center" sx={thSx}>
+                <Box>パスワード</Box>
+                <Box sx={{ fontSize:'0.6rem',fontWeight:400,color:'#a78bfa',textTransform:'none',letterSpacing:0 }}>変更時のみ</Box>
+              </TableCell>
+              <TableCell align="center" sx={thSx}>ロール</TableCell>
+              <TableCell align="center" sx={thSx}>メールアドレス</TableCell>
+              <TableCell align="center" sx={thSx}>有効フラグ</TableCell>
+            </TableRow></TableHead>
             <TableBody>
-              {users.map((row, index) => (
-                  <TableRow key={index} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
-                    <TableCell padding="checkbox">
-                      <Checkbox
-                        checked={selectedKeys.has(row.userId)}
-                        onChange={(e) => handleSelect(row.userId, e.target.checked)}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <TextField variant="outlined" size="small" sx={{ width: '100%' }}
-                        value={row.userId}
-                        error={!!errors[index]?.userId}
-                        helperText={errors[index]?.userId}
-                        onChange={(e) => handleChange(index, 'userId', e.target.value)}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <TextField variant="outlined" size="small" sx={{ width: '100%' }}
-                        value={row.userName}
-                        error={!!errors[index]?.userName}
-                        helperText={errors[index]?.userName}
-                        onChange={(e) => handleChange(index, 'userName', e.target.value)}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <TextField variant="outlined" size="small" sx={{ width: '100%' }}
-                        type="password"
-                        value={row.plainPassword}
-                        placeholder="新規は必須 / 変更時のみ入力"
-                        error={!!errors[index]?.plainPassword}
-                        helperText={errors[index]?.plainPassword}
-                        onChange={(e) => handleChange(index, 'plainPassword', e.target.value)}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Select value={row.roleCd} size="small" fullWidth
-                        onChange={(e) => handleChange(index, 'roleCd', e.target.value)}>
-                        {ROLE_OPTIONS.map(opt => (
-                          <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
-                        ))}
+              {users.map((row,i)=>(
+                <TableRow key={i} sx={{
+                  backgroundColor:selectedKeys.has(row.userId)?'rgba(139,92,246,0.05)!important':'transparent',
+                  '&:hover':{ backgroundColor:'rgba(139,92,246,0.03)!important' }, transition:'background-color 0.15s',
+                }}>
+                  <TableCell padding="checkbox">
+                    <Checkbox checked={selectedKeys.has(row.userId)} onChange={e=>handleSelect(row.userId,e.target.checked)}
+                      sx={{ '&.Mui-checked':{ color:'#8b5cf6' } }} />
+                  </TableCell>
+                  <TableCell><TextField variant="outlined" size="small" fullWidth value={row.userId} sx={inputSx}
+                    error={!!errors[i]?.userId} helperText={errors[i]?.userId} onChange={e=>handleChange(i,'userId',e.target.value)} /></TableCell>
+                  <TableCell><TextField variant="outlined" size="small" fullWidth value={row.userName} sx={inputSx}
+                    error={!!errors[i]?.userName} helperText={errors[i]?.userName} onChange={e=>handleChange(i,'userName',e.target.value)} /></TableCell>
+                  <TableCell><TextField variant="outlined" size="small" fullWidth type="password" value={row.plainPassword??''} sx={inputSx}
+                    placeholder="パスワードを入力"
+                    error={!!errors[i]?.plainPassword} helperText={errors[i]?.plainPassword}
+                    onFocus={()=>{ if(row.plainPassword===EXISTING_PW) handleChange(i,'plainPassword',''); }}
+                    onChange={e=>handleChange(i,'plainPassword',e.target.value)} /></TableCell>
+                  <TableCell>
+                    <Box sx={{ display:'flex',flexDirection:'column',gap:0.5 }}>
+                      <Select value={row.roleCd} size="small" fullWidth sx={selSx} onChange={e=>handleChange(i,'roleCd',e.target.value)}>
+                        {ROLE_OPTIONS.map(o=><MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>)}
                       </Select>
-                    </TableCell>
-                    <TableCell>
-                      <TextField variant="outlined" size="small" sx={{ width: '100%' }}
-                        value={row.email ?? ''}
-                        error={!!errors[index]?.email}
-                        helperText={errors[index]?.email}
-                        onChange={(e) => handleChange(index, 'email', e.target.value)}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Select value={row.yukoFlag} size="small" fullWidth
-                        onChange={(e) => handleChange(index, 'yukoFlag', e.target.value)}>
-                        <MenuItem value="1">有効</MenuItem>
-                        <MenuItem value="0">無効</MenuItem>
-                      </Select>
-                    </TableCell>
-                  </TableRow>
+                      <Chip label={row.roleCd==='ADMIN'?'👑 管理者':'👤 一般'} size="small" sx={{
+                        height:20, fontSize:'0.65rem', fontWeight:700,
+                        background: row.roleCd==='ADMIN'
+                          ? 'linear-gradient(135deg,rgba(244,63,94,0.12),rgba(236,72,153,0.1))'
+                          : 'linear-gradient(135deg,rgba(139,92,246,0.1),rgba(99,102,241,0.08))',
+                        color: row.roleCd==='ADMIN' ? '#e11d48' : '#7c3aed',
+                        border:`1.5px solid ${row.roleCd==='ADMIN'?'rgba(244,63,94,0.25)':'rgba(139,92,246,0.22)'}`,
+                        '& .MuiChip-label':{ px:1 },
+                      }} />
+                    </Box>
+                  </TableCell>
+                  <TableCell><TextField variant="outlined" size="small" fullWidth value={row.email??''} sx={inputSx}
+                    error={!!errors[i]?.email} helperText={errors[i]?.email} onChange={e=>handleChange(i,'email',e.target.value)} /></TableCell>
+                  <TableCell>
+                    <Select value={row.yukoFlag} size="small" fullWidth sx={selSx} onChange={e=>handleChange(i,'yukoFlag',e.target.value)}>
+                      <MenuItem value="1">✅ 有効</MenuItem><MenuItem value="0">❌ 無効</MenuItem>
+                    </Select>
+                  </TableCell>
+                </TableRow>
               ))}
             </TableBody>
           </Table>
         </TableContainer>
-      </Paper>
-    </div>
+      </Box>
+    </Box>
   );
 };
-
 export default UserMasterTab;

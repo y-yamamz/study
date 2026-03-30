@@ -7,282 +7,161 @@ import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Button from '@mui/material/Button';
-import { Checkbox, MenuItem, Select, Stack, TextField } from '@mui/material';
+import { Box, Checkbox, MenuItem, Select, Stack, TextField, Typography } from '@mui/material';
 import {
-  MstCode,
-  MstGroupCode,
-  RowErrors,
-  getCodeList,
-  saveCodeList,
-  deleteCodeList,
-  getGroupCodeList,
-  updateRowError,
+  MstCode, MstGroupCode, RowErrors, getCodeList, saveCodeList,
+  deleteCodeList, getGroupCodeList, updateRowError,
 } from '../../common/masterCommon';
 import { Messages } from '../../constants/messages';
 
-/**
- * コードマスタ管理タブ
- */
+const COLORS = ['#f59e0b','#f43f5e'];
+const thSx = {
+  background:'linear-gradient(135deg,rgba(245,158,11,0.08),rgba(244,63,94,0.05)) !important',
+  borderBottom:'2px solid rgba(245,158,11,0.2) !important',
+  fontSize:'0.72rem', fontWeight:700, letterSpacing:'0.06em',
+  textTransform:'uppercase' as const, color:'#d97706', py:1.5,
+};
+const inputSx = {
+  '& .MuiOutlinedInput-root':{ fontSize:'0.82rem', borderRadius:'10px', backgroundColor:'#fffbf5',
+    '& fieldset':{ borderColor:'rgba(245,158,11,0.25)' },
+    '&:hover fieldset':{ borderColor:'rgba(245,158,11,0.5)' },
+    '&.Mui-focused fieldset':{ borderColor:'#f59e0b', borderWidth:2 },
+  },
+};
+const selSx = {
+  fontSize:'0.82rem', borderRadius:'10px', backgroundColor:'#fffbf5',
+  '& .MuiOutlinedInput-notchedOutline':{ borderColor:'rgba(245,158,11,0.25)' },
+  '&:hover .MuiOutlinedInput-notchedOutline':{ borderColor:'rgba(245,158,11,0.5)' },
+  '&.Mui-focused .MuiOutlinedInput-notchedOutline':{ borderColor:'#f59e0b', borderWidth:2 },
+};
+
 const CodeMasterTab = () => {
   const [codes, setCodes] = useState<MstCode[]>([]);
   const [groupCodes, setGroupCodes] = useState<MstGroupCode[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isChanged, setIsChanged] = useState(false);
+  const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
+  const [errors, setErrors] = useState<RowErrors>({});
 
-  /** 排他制御：登録処理中フラグ */
-  const [isSavingCode, setIsSavingCode] = useState(false);
+  useEffect(()=>{
+    Promise.all([getCodeList(),getGroupCodeList()]).then(([c,g])=>{ setCodes(c); setGroupCodes(g); }).catch(()=>{});
+  },[]);
 
-  /** 変更状態管理フラグ */
-  const [isCodeChanged, setIsCodeChanged] = useState(false);
-
-  /** 選択行のキーセット（マルチ選択削除用） */
-  const [selectedCodeKeys, setSelectedCodeKeys] = useState<Set<string>>(new Set());
-
-  /** インラインエラー状態 */
-  const [codeErrors, setCodeErrors] = useState<RowErrors>({});
-
-  /**
-   * 初期データ取得
-   * コード一覧とグループCD選択用にコードグループ一覧も取得する
-   */
-  useEffect(() => {
-    const init = async () => {
-      const codeList = await getCodeList();
-      setCodes(codeList);
-      const groupCodeList = await getGroupCodeList();
-      setGroupCodes(groupCodeList);
-    };
-
-    try {
-      init();
-    } catch (e) {
-      // error
-    }
-  }, []);
-
-  /** --- コードマスタ 選択・削除 --- */
-
-  const handleSelectCode = (key: string, checked: boolean) => {
-    const next = new Set(selectedCodeKeys);
-    checked ? next.add(key) : next.delete(key);
-    setSelectedCodeKeys(next);
+  const key=(r:MstCode)=>`${r.grCd}_${r.cd}`;
+  const handleSelect=(k:string,c:boolean)=>{ const n=new Set(selectedKeys); c?n.add(k):n.delete(k); setSelectedKeys(n); };
+  const handleSelectAll=(c:boolean)=>setSelectedKeys(c?new Set(codes.map(key)):new Set());
+  const handleDelete=async()=>{
+    if(!selectedKeys.size) return;
+    if(!window.confirm(`選択した ${selectedKeys.size} 件を削除してもよろしいですか？`)) return;
+    try{ await deleteCodeList(codes.filter(c=>selectedKeys.has(key(c))));
+      alert("削除しました。"); setCodes(await getCodeList()); setSelectedKeys(new Set()); setErrors({});
+    }catch(_){ alert("削除に失敗しました。"); }
   };
-
-  const handleSelectAllCode = (checked: boolean) => {
-    setSelectedCodeKeys(checked ? new Set(codes.map(c => `${c.grCd}_${c.cd}`)) : new Set());
+  const handleChange=(i:number,f:keyof MstCode,v:string)=>{
+    const nl=[...codes]; nl[i][f]=v; setCodes(nl); setIsChanged(true);
+    let e="";
+    if(f==="cd"&&v.length>Messages.maxLength.codeCd) e=Messages.error.code.cd;
+    else if(f==="cdName"&&v.length>Messages.maxLength.codeName) e=Messages.error.code.cdName;
+    else if(f==="color"&&v.length>Messages.maxLength.color) e=Messages.error.code.color;
+    else if(f==="note"&&v.length>Messages.maxLength.note) e=Messages.error.code.note;
+    else if(f==="biko"&&v.length>Messages.maxLength.biko) e=Messages.error.code.biko;
+    updateRowError(setErrors,i,f,e);
   };
-
-  const handleDeleteCode = async () => {
-    if (selectedCodeKeys.size === 0) return;
-    if (!window.confirm(`選択した ${selectedCodeKeys.size} 件を削除してもよろしいですか？`)) return;
-    try {
-      const targets = codes.filter(c => selectedCodeKeys.has(`${c.grCd}_${c.cd}`));
-      await deleteCodeList(targets);
-      alert("削除しました。");
-      const newList = await getCodeList();
-      setCodes(newList);
-      setSelectedCodeKeys(new Set());
-      setCodeErrors({});
-    } catch (e) {
-      alert("削除に失敗しました。");
-    }
-  };
-
-  /**
-   * コードマスタのセル値変更処理
-   * @param index 行インデックス
-   * @param field 変更フィールド
-   * @param value 変更値
-   */
-  const handleCodeChange = (index: number, field: keyof MstCode, value: string) => {
-    const newList = [...codes];
-    newList[index][field] = value;
-    setCodes(newList);
-    setIsCodeChanged(true);
-
-    // フィールドバリデーション
-    let errMsg = "";
-    if (field === "cd" && value.length > Messages.maxLength.codeCd) {
-      errMsg = Messages.error.code.cd;
-    } else if (field === "cdName" && value.length > Messages.maxLength.codeName) {
-      errMsg = Messages.error.code.cdName;
-    } else if (field === "color" && value.length > Messages.maxLength.color) {
-      errMsg = Messages.error.code.color;
-    } else if (field === "note" && value.length > Messages.maxLength.note) {
-      errMsg = Messages.error.code.note;
-    } else if (field === "biko" && value.length > Messages.maxLength.biko) {
-      errMsg = Messages.error.code.biko;
-    }
-    updateRowError(setCodeErrors, index, field, errMsg);
-  };
-
-  /**
-   * コードマスタの行追加処理
-   */
-  const handleAddCode = () => {
-    setCodes([...codes, { grCd: "", cd: "", cdName: "", color: "", note: "", biko: "", yukoFlag: "1" }]);
-    setIsCodeChanged(true);
-  };
-
-  /**
-   * コードマスタの登録処理
-   * 排他制御により二重送信を防止する
-   */
-  const handleRegisterCode = async () => {
-    // 排他制御：登録処理中は再実行を禁止
-    if (isSavingCode) {
-      return;
-    }
-    // インラインエラーチェック
-    const hasErrors = Object.values(codeErrors).some(row => Object.keys(row).length > 0);
-    if (hasErrors) {
-      alert("入力内容にエラーがあります。確認してください。");
-      return;
-    }
-    try {
-      const entry = window.confirm("登録してもよろしいですか？");
-      if (!entry) {
-        return;
-      }
-      setIsSavingCode(true);
-      // グループCD・CD・コード名称がいずれも入力済みの行のみ登録対象とする
-      const saveTargets = codes.filter(
-        c => c.grCd.trim() !== "" && c.cd.trim() !== "" && c.cdName.trim() !== ""
-      );
-      if (saveTargets.length === 0) {
-        alert("登録可能なデータがありません。グループCD・CD・コード名称を入力してください。");
-        return;
-      }
-      const result = await saveCodeList(saveTargets);
-      if (result.status === "OK") {
-        setIsCodeChanged(false);
-        alert("登録しました。");
-        // 登録完了後に再描画
-        const newList = await getCodeList();
-        setCodes(newList);
-        setCodeErrors({});
-      } else {
-        alert("登録に失敗しました");
-      }
-    } catch (e) {
-      alert("登録に失敗しました。");
-    } finally {
-      setIsSavingCode(false);
-    }
+  const handleAdd=()=>{ setCodes([...codes,{grCd:"",cd:"",cdName:"",color:"",note:"",biko:"",yukoFlag:"1"}]); setIsChanged(true); };
+  const handleRegister=async()=>{
+    if(isSaving) return;
+    if(Object.values(errors).some(r=>Object.keys(r).length>0)){ alert("入力内容にエラーがあります。"); return; }
+    if(!window.confirm("登録してもよろしいですか？")) return;
+    try{
+      setIsSaving(true);
+      const t=codes.filter(c=>c.grCd.trim()!==""&&c.cd.trim()!==""&&c.cdName.trim()!=="");
+      if(!t.length){ alert("グループCD・CD・コード名称を入力してください。"); return; }
+      const res=await saveCodeList(t);
+      if(res.status==="OK"){ setIsChanged(false); alert("登録しました。"); setCodes(await getCodeList()); setErrors({}); }
+      else alert("登録に失敗しました");
+    }catch(_){ alert("登録に失敗しました。"); }
+    finally{ setIsSaving(false); }
   };
 
   return (
-    <div>
-      <Stack direction="row" spacing={2} sx={{ mb: 2 }} alignItems="center">
-        <Button variant="contained" color="primary" onClick={handleRegisterCode} disabled={isSavingCode}>
-          {isSavingCode ? "登録中..." : "登録"}
-        </Button>
-        <Button variant="contained" color="primary" onClick={handleAddCode} disabled={isSavingCode}>
-          追加
-        </Button>
-        <Button variant="contained" color="error" onClick={handleDeleteCode}
-          disabled={selectedCodeKeys.size === 0}>
-          削除
-        </Button>
-        {selectedCodeKeys.size > 0 && (
-          <span style={{ color: "#d32f2f" }}>{selectedCodeKeys.size} 件選択中</span>
-        )}
-        {/* 変更状態メッセージ */}
-        {isCodeChanged && (
-          <span style={{ color: "#d32f2f", fontWeight: "bold" }}>変更されています</span>
-        )}
+    <Box>
+      <Stack direction="row" spacing={1.5} sx={{ mb:2.5 }} alignItems="center">
+        <Button variant="contained" size="small" onClick={handleRegister} disabled={isSaving}
+          sx={{ background:`linear-gradient(135deg,${COLORS[0]},${COLORS[1]})`, boxShadow:`0 4px 14px ${COLORS[0]}55`, px:2.5,
+            '&:hover':{ transform:'translateY(-2px)' },'&.Mui-disabled':{ opacity:0.5 } }}>
+          {isSaving?"登録中...":"✓ 登録"}</Button>
+        <Button variant="outlined" size="small" onClick={handleAdd} disabled={isSaving}
+          sx={{ borderColor:`${COLORS[0]}66`,color:COLORS[0],px:2.5,'&:hover':{ borderColor:COLORS[0],backgroundColor:`${COLORS[0]}10`,transform:'translateY(-2px)' } }}>+ 追加</Button>
+        <Button variant="contained" color="error" size="small" onClick={handleDelete} disabled={!selectedKeys.size}
+          sx={{ px:2.5,'&:hover':{ transform:'translateY(-2px)' } }}>✕ 削除</Button>
+        {selectedKeys.size>0&&<Typography sx={{ fontSize:'0.8rem',color:'#f43f5e',fontWeight:700 }}>{selectedKeys.size} 件選択中</Typography>}
+        {isChanged&&<Box sx={{ px:1.5,py:0.5,borderRadius:20,background:'rgba(245,158,11,0.1)',border:'1px solid rgba(245,158,11,0.25)' }}>
+          <Typography sx={{ fontSize:'0.75rem',color:'#f59e0b',fontWeight:700 }}>● 未保存の変更があります</Typography>
+        </Box>}
       </Stack>
-      <Paper sx={{ width: "100%", overflow: "hidden" }}>
-        <TableContainer component={Paper} sx={{ maxHeight: 400, overflow: "auto" }}>
-          <Table sx={{ minWidth: 700 }} aria-label="code table" stickyHeader>
-            <TableHead>
-              <TableRow>
-                <TableCell padding="checkbox" sx={{ backgroundColor: "#90bef3dc" }}>
-                  <Checkbox
-                    indeterminate={selectedCodeKeys.size > 0 && selectedCodeKeys.size < codes.length}
-                    checked={codes.length > 0 && selectedCodeKeys.size === codes.length}
-                    onChange={(e) => handleSelectAllCode(e.target.checked)}
-                  />
-                </TableCell>
-                <TableCell align="center" sx={{ width: 100, borderRight: "1px solid #4e4c4c", backgroundColor: "#90bef3dc" }}>グループCD</TableCell>
-                <TableCell align="center" sx={{ width: 100, borderRight: "1px solid #4e4c4c", backgroundColor: "#90bef3dc" }}>CD</TableCell>
-                <TableCell align="center" sx={{ width: 200, borderRight: "1px solid #4e4c4c", backgroundColor: "#90bef3dc" }}>コード名称</TableCell>
-                <TableCell align="center" sx={{ width: 160, borderRight: "1px solid #4e4c4c", backgroundColor: "#90bef3dc" }}>カラー</TableCell>
-                <TableCell align="center" sx={{ width: 250, borderRight: "1px solid #4e4c4c", backgroundColor: "#90bef3dc" }}>内容</TableCell>
-                <TableCell align="center" sx={{ width: 250, borderRight: "1px solid #4e4c4c", backgroundColor: "#90bef3dc" }}>備考</TableCell>
-                <TableCell align="center" sx={{ width: 100, backgroundColor: "#90bef3dc" }}>有効フラグ</TableCell>
-              </TableRow>
-            </TableHead>
+      <Box sx={{ borderRadius:'16px',overflow:'hidden',border:'1.5px solid rgba(245,158,11,0.15)',boxShadow:'0 2px 12px rgba(245,158,11,0.08)' }}>
+        <TableContainer component={Paper} elevation={0} sx={{ maxHeight:380,background:'transparent' }}>
+          <Table sx={{ minWidth:820 }} stickyHeader>
+            <TableHead><TableRow>
+              <TableCell padding="checkbox" sx={thSx}>
+                <Checkbox indeterminate={selectedKeys.size>0&&selectedKeys.size<codes.length}
+                  checked={codes.length>0&&selectedKeys.size===codes.length}
+                  onChange={e=>handleSelectAll(e.target.checked)}
+                  sx={{ '&.Mui-checked,&.MuiCheckbox-indeterminate':{ color:'#f59e0b' } }} />
+              </TableCell>
+              {['グループCD','CD','コード名称','カラー','内容','備考','有効フラグ'].map(h=>(
+                <TableCell key={h} align="center" sx={thSx}>{h}</TableCell>
+              ))}
+            </TableRow></TableHead>
             <TableBody>
-              {codes.map((row, index) => (
-                <TableRow
-                  key={index}
-                  sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
-                >
+              {codes.map((row,i)=>(
+                <TableRow key={i} sx={{
+                  backgroundColor:selectedKeys.has(key(row))?'rgba(245,158,11,0.05)!important':'transparent',
+                  '&:hover':{ backgroundColor:'rgba(245,158,11,0.03)!important' },
+                  transition:'background-color 0.15s',
+                }}>
                   <TableCell padding="checkbox">
-                    <Checkbox
-                      checked={selectedCodeKeys.has(`${row.grCd}_${row.cd}`)}
-                      onChange={(e) => handleSelectCode(`${row.grCd}_${row.cd}`, e.target.checked)}
-                    />
+                    <Checkbox checked={selectedKeys.has(key(row))} onChange={e=>handleSelect(key(row),e.target.checked)}
+                      sx={{ '&.Mui-checked':{ color:'#f59e0b' } }} />
                   </TableCell>
                   <TableCell>
-                    {/* グループCDはコードグループマスタから選択、表示はコードグループ名 */}
-                    <Select value={row.grCd} size="small" fullWidth
-                      onChange={(e) => handleCodeChange(index, "grCd", e.target.value)}>
-                      <MenuItem value="">選択してください</MenuItem>
-                      {groupCodes.map(gc => (
-                        <MenuItem key={gc.cd} value={gc.cd}>{gc.cdName}</MenuItem>
-                      ))}
+                    <Select value={row.grCd} size="small" fullWidth sx={selSx} onChange={e=>handleChange(i,"grCd",e.target.value)}>
+                      <MenuItem value="">選択</MenuItem>
+                      {groupCodes.map(g=><MenuItem key={g.cd} value={g.cd}>{g.cdName}</MenuItem>)}
                     </Select>
                   </TableCell>
+                  <TableCell><TextField variant="outlined" size="small" fullWidth value={row.cd} sx={inputSx}
+                    error={!!errors[i]?.cd} helperText={errors[i]?.cd} onChange={e=>handleChange(i,"cd",e.target.value)} /></TableCell>
+                  <TableCell><TextField variant="outlined" size="small" fullWidth value={row.cdName} sx={inputSx}
+                    error={!!errors[i]?.cdName} helperText={errors[i]?.cdName} onChange={e=>handleChange(i,"cdName",e.target.value)} /></TableCell>
                   <TableCell>
-                    <TextField variant="outlined" size="small" sx={{ width: "100%" }}
-                      value={row.cd}
-                      error={!!codeErrors[index]?.cd}
-                      helperText={codeErrors[index]?.cd}
-                      onChange={(e) => handleCodeChange(index, "cd", e.target.value)} />
-                  </TableCell>
-                  <TableCell>
-                    <TextField variant="outlined" size="small" sx={{ width: "100%" }}
-                      value={row.cdName}
-                      error={!!codeErrors[index]?.cdName}
-                      helperText={codeErrors[index]?.cdName}
-                      onChange={(e) => handleCodeChange(index, "cdName", e.target.value)} />
-                  </TableCell>
-                  <TableCell>
-                    {/* カラーピッカーとテキスト入力を並べて表示 */}
                     <Stack direction="row" spacing={1} alignItems="center">
-                      <input
-                        type="color"
-                        value={row.color || "#ffffff"}
-                        onChange={(e) => handleCodeChange(index, "color", e.target.value)}
-                        style={{ width: 36, height: 36, border: "none", padding: 0, cursor: "pointer", borderRadius: 4 }}
-                      />
-                      <TextField variant="outlined" size="small" sx={{ width: 100 }}
-                        value={row.color ?? ""}
-                        placeholder="#FF5733"
-                        error={!!codeErrors[index]?.color}
-                        helperText={codeErrors[index]?.color}
-                        onChange={(e) => handleCodeChange(index, "color", e.target.value)} />
+                      {/* Color preview swatch */}
+                      {row.color && (
+                        <Box sx={{
+                          width:28, height:28, borderRadius:'8px', flexShrink:0,
+                          background:row.color, border:'2px solid rgba(0,0,0,0.08)',
+                          boxShadow:`0 2px 8px ${row.color}55`,
+                        }} />
+                      )}
+                      <Box sx={{ position:'relative' }}>
+                        <input type="color" value={row.color||"#6366f1"} onChange={e=>handleChange(i,"color",e.target.value)}
+                          style={{ width:34,height:34,border:'1.5px solid rgba(245,158,11,0.3)',
+                            padding:2,cursor:'pointer',borderRadius:8,backgroundColor:'#fffbf5' }} />
+                      </Box>
+                      <TextField variant="outlined" size="small" sx={{ width:92,...inputSx }}
+                        value={row.color??""} placeholder="#F59E0B"
+                        error={!!errors[i]?.color} helperText={errors[i]?.color}
+                        onChange={e=>handleChange(i,"color",e.target.value)} />
                     </Stack>
                   </TableCell>
+                  <TableCell><TextField variant="outlined" size="small" fullWidth value={row.note??""} sx={inputSx}
+                    error={!!errors[i]?.note} helperText={errors[i]?.note} onChange={e=>handleChange(i,"note",e.target.value)} /></TableCell>
+                  <TableCell><TextField variant="outlined" size="small" fullWidth value={row.biko??""} sx={inputSx}
+                    error={!!errors[i]?.biko} helperText={errors[i]?.biko} onChange={e=>handleChange(i,"biko",e.target.value)} /></TableCell>
                   <TableCell>
-                    <TextField variant="outlined" size="small" sx={{ width: "100%" }}
-                      value={row.note ?? ""}
-                      error={!!codeErrors[index]?.note}
-                      helperText={codeErrors[index]?.note}
-                      onChange={(e) => handleCodeChange(index, "note", e.target.value)} />
-                  </TableCell>
-                  <TableCell>
-                    <TextField variant="outlined" size="small" sx={{ width: "100%" }}
-                      value={row.biko ?? ""}
-                      error={!!codeErrors[index]?.biko}
-                      helperText={codeErrors[index]?.biko}
-                      onChange={(e) => handleCodeChange(index, "biko", e.target.value)} />
-                  </TableCell>
-                  <TableCell>
-                    <Select value={row.yukoFlag} size="small" fullWidth
-                      onChange={(e) => handleCodeChange(index, "yukoFlag", e.target.value)}>
-                      <MenuItem value="1">有効</MenuItem>
-                      <MenuItem value="0">無効</MenuItem>
+                    <Select value={row.yukoFlag} size="small" fullWidth sx={selSx} onChange={e=>handleChange(i,"yukoFlag",e.target.value)}>
+                      <MenuItem value="1">✅ 有効</MenuItem><MenuItem value="0">❌ 無効</MenuItem>
                     </Select>
                   </TableCell>
                 </TableRow>
@@ -290,9 +169,8 @@ const CodeMasterTab = () => {
             </TableBody>
           </Table>
         </TableContainer>
-      </Paper>
-    </div>
+      </Box>
+    </Box>
   );
 };
-
 export default CodeMasterTab;

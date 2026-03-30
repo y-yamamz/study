@@ -7,245 +7,127 @@ import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Button from '@mui/material/Button';
-import { Checkbox, MenuItem, Select, Stack, TextField } from '@mui/material';
+import { Box, Checkbox, MenuItem, Select, Stack, TextField, Typography } from '@mui/material';
 import {
-  MstGroupCode,
-  RowErrors,
-  getGroupCodeList,
-  saveGroupCodeList,
-  deleteGroupCodeList,
-  updateRowError,
+  MstGroupCode, RowErrors, getGroupCodeList, saveGroupCodeList, deleteGroupCodeList, updateRowError,
 } from '../../common/masterCommon';
 import { Messages } from '../../constants/messages';
 
-/**
- * コードグループマスタ管理タブ
- */
+const COLORS = ['#10b981','#06b6d4'];
+const thSx = {
+  background:'linear-gradient(135deg,rgba(16,185,129,0.07),rgba(6,182,212,0.05)) !important',
+  borderBottom:'2px solid rgba(16,185,129,0.18) !important',
+  fontSize:'0.72rem', fontWeight:700, letterSpacing:'0.06em',
+  textTransform:'uppercase' as const, color:'#059669', py:1.5,
+};
+const inputSx = {
+  '& .MuiOutlinedInput-root':{ fontSize:'0.82rem', borderRadius:'10px', backgroundColor:'#f0fdf4',
+    '& fieldset':{ borderColor:'rgba(16,185,129,0.22)' },
+    '&:hover fieldset':{ borderColor:'rgba(16,185,129,0.5)' },
+    '&.Mui-focused fieldset':{ borderColor:'#10b981', borderWidth:2 },
+  },
+};
+const selSx = {
+  fontSize:'0.82rem', borderRadius:'10px', backgroundColor:'#f0fdf4',
+  '& .MuiOutlinedInput-notchedOutline':{ borderColor:'rgba(16,185,129,0.22)' },
+  '&:hover .MuiOutlinedInput-notchedOutline':{ borderColor:'rgba(16,185,129,0.5)' },
+  '&.Mui-focused .MuiOutlinedInput-notchedOutline':{ borderColor:'#10b981', borderWidth:2 },
+};
+
 const GroupCodeMasterTab = () => {
   const [groupCodes, setGroupCodes] = useState<MstGroupCode[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isChanged, setIsChanged] = useState(false);
+  const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
+  const [errors, setErrors] = useState<RowErrors>({});
 
-  /** 排他制御：登録処理中フラグ */
-  const [isSavingGroupCode, setIsSavingGroupCode] = useState(false);
+  useEffect(()=>{ getGroupCodeList().then(setGroupCodes).catch(()=>{}); },[]);
 
-  /** 変更状態管理フラグ */
-  const [isGroupCodeChanged, setIsGroupCodeChanged] = useState(false);
-
-  /** 選択行のキーセット（マルチ選択削除用） */
-  const [selectedGroupCodeKeys, setSelectedGroupCodeKeys] = useState<Set<string>>(new Set());
-
-  /** インラインエラー状態 */
-  const [groupCodeErrors, setGroupCodeErrors] = useState<RowErrors>({});
-
-  /**
-   * 初期データ取得
-   */
-  useEffect(() => {
-    const init = async () => {
-      const groupCodeList = await getGroupCodeList();
-      setGroupCodes(groupCodeList);
-    };
-
-    try {
-      init();
-    } catch (e) {
-      // error
-    }
-  }, []);
-
-  /** --- コードグループマスタ 選択・削除 --- */
-
-  const handleSelectGroupCode = (key: string, checked: boolean) => {
-    const next = new Set(selectedGroupCodeKeys);
-    checked ? next.add(key) : next.delete(key);
-    setSelectedGroupCodeKeys(next);
+  const handleSelect=(k:string,c:boolean)=>{ const n=new Set(selectedKeys); c?n.add(k):n.delete(k); setSelectedKeys(n); };
+  const handleSelectAll=(c:boolean)=>setSelectedKeys(c?new Set(groupCodes.map(g=>g.cd)):new Set());
+  const handleDelete=async()=>{
+    if(!selectedKeys.size) return;
+    if(!window.confirm(`選択した ${selectedKeys.size} 件を削除してもよろしいですか？`)) return;
+    try{ await deleteGroupCodeList(groupCodes.filter(g=>selectedKeys.has(g.cd)));
+      alert("削除しました。"); setGroupCodes(await getGroupCodeList()); setSelectedKeys(new Set()); setErrors({});
+    }catch(_){ alert("削除に失敗しました。"); }
   };
-
-  const handleSelectAllGroupCode = (checked: boolean) => {
-    setSelectedGroupCodeKeys(checked ? new Set(groupCodes.map(g => g.cd)) : new Set());
+  const handleChange=(i:number,f:keyof MstGroupCode,v:string)=>{
+    const nl=[...groupCodes]; nl[i][f]=v; setGroupCodes(nl); setIsChanged(true);
+    let e="";
+    if(f==="cd"&&v.length>Messages.maxLength.groupCodeCd) e=Messages.error.groupCode.cd;
+    else if(f==="cdName"&&v.length>Messages.maxLength.groupCodeName) e=Messages.error.groupCode.cdName;
+    else if(f==="note"&&v.length>Messages.maxLength.note) e=Messages.error.groupCode.note;
+    else if(f==="biko"&&v.length>Messages.maxLength.biko) e=Messages.error.groupCode.biko;
+    updateRowError(setErrors,i,f,e);
   };
-
-  const handleDeleteGroupCode = async () => {
-    if (selectedGroupCodeKeys.size === 0) return;
-    if (!window.confirm(`選択した ${selectedGroupCodeKeys.size} 件を削除してもよろしいですか？`)) return;
-    try {
-      const targets = groupCodes.filter(g => selectedGroupCodeKeys.has(g.cd));
-      await deleteGroupCodeList(targets);
-      alert("削除しました。");
-      const newList = await getGroupCodeList();
-      setGroupCodes(newList);
-      setSelectedGroupCodeKeys(new Set());
-      setGroupCodeErrors({});
-    } catch (e) {
-      alert("削除に失敗しました。");
-    }
-  };
-
-  /**
-   * コードグループマスタのセル値変更処理
-   * @param index 行インデックス
-   * @param field 変更フィールド
-   * @param value 変更値
-   */
-  const handleGroupCodeChange = (index: number, field: keyof MstGroupCode, value: string) => {
-    const newList = [...groupCodes];
-    newList[index][field] = value;
-    setGroupCodes(newList);
-    setIsGroupCodeChanged(true);
-
-    // フィールドバリデーション
-    let errMsg = "";
-    if (field === "cd" && value.length > Messages.maxLength.groupCodeCd) {
-      errMsg = Messages.error.groupCode.cd;
-    } else if (field === "cdName" && value.length > Messages.maxLength.groupCodeName) {
-      errMsg = Messages.error.groupCode.cdName;
-    } else if (field === "note" && value.length > Messages.maxLength.note) {
-      errMsg = Messages.error.groupCode.note;
-    } else if (field === "biko" && value.length > Messages.maxLength.biko) {
-      errMsg = Messages.error.groupCode.biko;
-    }
-    updateRowError(setGroupCodeErrors, index, field, errMsg);
-  };
-
-  /**
-   * コードグループマスタの行追加処理
-   */
-  const handleAddGroupCode = () => {
-    setGroupCodes([...groupCodes, { cd: "", cdName: "", note: "", biko: "", yukoFlag: "1" }]);
-    setIsGroupCodeChanged(true);
-  };
-
-  /**
-   * コードグループマスタの登録処理
-   * 排他制御により二重送信を防止する
-   */
-  const handleRegisterGroupCode = async () => {
-    // 排他制御：登録処理中は再実行を禁止
-    if (isSavingGroupCode) {
-      return;
-    }
-    // インラインエラーチェック
-    const hasErrors = Object.values(groupCodeErrors).some(row => Object.keys(row).length > 0);
-    if (hasErrors) {
-      alert("入力内容にエラーがあります。確認してください。");
-      return;
-    }
-    try {
-      const entry = window.confirm("登録してもよろしいですか？");
-      if (!entry) {
-        return;
-      }
-      setIsSavingGroupCode(true);
-      // CD・コードグループ名称がいずれも入力済みの行のみ登録対象とする
-      const saveTargets = groupCodes.filter(
-        g => g.cd.trim() !== "" && g.cdName.trim() !== ""
-      );
-      if (saveTargets.length === 0) {
-        alert("登録可能なデータがありません。CD・コードグループ名称を入力してください。");
-        return;
-      }
-      const result = await saveGroupCodeList(saveTargets);
-      if (result.status === "OK") {
-        setIsGroupCodeChanged(false);
-        alert("登録しました。");
-        // 登録完了後に再描画
-        const newList = await getGroupCodeList();
-        setGroupCodes(newList);
-        setGroupCodeErrors({});
-      } else {
-        alert("登録に失敗しました");
-      }
-    } catch (e) {
-      alert("登録に失敗しました。");
-    } finally {
-      setIsSavingGroupCode(false);
-    }
+  const handleAdd=()=>{ setGroupCodes([...groupCodes,{cd:"",cdName:"",note:"",biko:"",yukoFlag:"1"}]); setIsChanged(true); };
+  const handleRegister=async()=>{
+    if(isSaving) return;
+    if(Object.values(errors).some(r=>Object.keys(r).length>0)){ alert("入力内容にエラーがあります。"); return; }
+    if(!window.confirm("登録してもよろしいですか？")) return;
+    try{
+      setIsSaving(true);
+      const t=groupCodes.filter(g=>g.cd.trim()!==""&&g.cdName.trim()!=="");
+      if(!t.length){ alert("CD・コードグループ名称を入力してください。"); return; }
+      const res=await saveGroupCodeList(t);
+      if(res.status==="OK"){ setIsChanged(false); alert("登録しました。"); setGroupCodes(await getGroupCodeList()); setErrors({}); }
+      else alert("登録に失敗しました");
+    }catch(_){ alert("登録に失敗しました。"); }
+    finally{ setIsSaving(false); }
   };
 
   return (
-    <div>
-      <Stack direction="row" spacing={2} sx={{ mb: 2 }} alignItems="center">
-        <Button variant="contained" color="primary" onClick={handleRegisterGroupCode} disabled={isSavingGroupCode}>
-          {isSavingGroupCode ? "登録中..." : "登録"}
-        </Button>
-        <Button variant="contained" color="primary" onClick={handleAddGroupCode} disabled={isSavingGroupCode}>
-          追加
-        </Button>
-        <Button variant="contained" color="error" onClick={handleDeleteGroupCode}
-          disabled={selectedGroupCodeKeys.size === 0}>
-          削除
-        </Button>
-        {selectedGroupCodeKeys.size > 0 && (
-          <span style={{ color: "#d32f2f" }}>{selectedGroupCodeKeys.size} 件選択中</span>
-        )}
-        {/* 変更状態メッセージ */}
-        {isGroupCodeChanged && (
-          <span style={{ color: "#d32f2f", fontWeight: "bold" }}>変更されています</span>
-        )}
+    <Box>
+      <Stack direction="row" spacing={1.5} sx={{ mb:2.5 }} alignItems="center">
+        <Button variant="contained" size="small" onClick={handleRegister} disabled={isSaving}
+          sx={{ background:`linear-gradient(135deg,${COLORS[0]},${COLORS[1]})`, boxShadow:`0 4px 14px ${COLORS[0]}55`, px:2.5,
+            '&:hover':{ transform:'translateY(-2px)' },'&.Mui-disabled':{ opacity:0.5 } }}>
+          {isSaving?"登録中...":"✓ 登録"}</Button>
+        <Button variant="outlined" size="small" onClick={handleAdd} disabled={isSaving}
+          sx={{ borderColor:`${COLORS[0]}55`,color:COLORS[0],px:2.5,'&:hover':{ borderColor:COLORS[0],backgroundColor:`${COLORS[0]}10`,transform:'translateY(-2px)' } }}>+ 追加</Button>
+        <Button variant="contained" color="error" size="small" onClick={handleDelete} disabled={!selectedKeys.size}
+          sx={{ px:2.5,'&:hover':{ transform:'translateY(-2px)' } }}>✕ 削除</Button>
+        {selectedKeys.size>0&&<Typography sx={{ fontSize:'0.8rem',color:'#f43f5e',fontWeight:700 }}>{selectedKeys.size} 件選択中</Typography>}
+        {isChanged&&<Box sx={{ px:1.5,py:0.5,borderRadius:20,background:'rgba(245,158,11,0.1)',border:'1px solid rgba(245,158,11,0.25)' }}>
+          <Typography sx={{ fontSize:'0.75rem',color:'#f59e0b',fontWeight:700 }}>● 未保存の変更があります</Typography>
+        </Box>}
       </Stack>
-      <Paper sx={{ width: "100%", overflow: "hidden" }}>
-        <TableContainer component={Paper} sx={{ maxHeight: 400, overflow: "auto" }}>
-          <Table sx={{ minWidth: 700 }} aria-label="group code table" stickyHeader>
-            <TableHead>
-              <TableRow>
-                <TableCell padding="checkbox" sx={{ backgroundColor: "#90bef3dc" }}>
-                  <Checkbox
-                    indeterminate={selectedGroupCodeKeys.size > 0 && selectedGroupCodeKeys.size < groupCodes.length}
-                    checked={groupCodes.length > 0 && selectedGroupCodeKeys.size === groupCodes.length}
-                    onChange={(e) => handleSelectAllGroupCode(e.target.checked)}
-                  />
-                </TableCell>
-                <TableCell align="center" sx={{ width: 100, borderRight: "1px solid #4e4c4c", backgroundColor: "#90bef3dc" }}>CD</TableCell>
-                <TableCell align="center" sx={{ width: 200, borderRight: "1px solid #4e4c4c", backgroundColor: "#90bef3dc" }}>コードグループ名称</TableCell>
-                <TableCell align="center" sx={{ width: 250, borderRight: "1px solid #4e4c4c", backgroundColor: "#90bef3dc" }}>内容</TableCell>
-                <TableCell align="center" sx={{ width: 250, borderRight: "1px solid #4e4c4c", backgroundColor: "#90bef3dc" }}>備考</TableCell>
-                <TableCell align="center" sx={{ width: 100, backgroundColor: "#90bef3dc" }}>有効フラグ</TableCell>
-              </TableRow>
-            </TableHead>
+      <Box sx={{ borderRadius:'16px',overflow:'hidden',border:'1.5px solid rgba(16,185,129,0.15)',boxShadow:'0 2px 12px rgba(16,185,129,0.07)' }}>
+        <TableContainer component={Paper} elevation={0} sx={{ maxHeight:380,background:'transparent' }}>
+          <Table sx={{ minWidth:700 }} stickyHeader>
+            <TableHead><TableRow>
+              <TableCell padding="checkbox" sx={thSx}>
+                <Checkbox indeterminate={selectedKeys.size>0&&selectedKeys.size<groupCodes.length}
+                  checked={groupCodes.length>0&&selectedKeys.size===groupCodes.length}
+                  onChange={e=>handleSelectAll(e.target.checked)}
+                  sx={{ '&.Mui-checked,&.MuiCheckbox-indeterminate':{ color:'#10b981' } }} />
+              </TableCell>
+              {['CD','コードグループ名称','内容','備考','有効フラグ'].map(h=>(
+                <TableCell key={h} align="center" sx={thSx}>{h}</TableCell>
+              ))}
+            </TableRow></TableHead>
             <TableBody>
-              {groupCodes.map((row, index) => (
-                <TableRow
-                  key={index}
-                  sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
-                >
+              {groupCodes.map((row,i)=>(
+                <TableRow key={i} sx={{
+                  backgroundColor:selectedKeys.has(row.cd)?'rgba(16,185,129,0.05)!important':'transparent',
+                  '&:hover':{ backgroundColor:'rgba(16,185,129,0.03)!important' }, transition:'background-color 0.15s',
+                }}>
                   <TableCell padding="checkbox">
-                    <Checkbox
-                      checked={selectedGroupCodeKeys.has(row.cd)}
-                      onChange={(e) => handleSelectGroupCode(row.cd, e.target.checked)}
-                    />
+                    <Checkbox checked={selectedKeys.has(row.cd)} onChange={e=>handleSelect(row.cd,e.target.checked)}
+                      sx={{ '&.Mui-checked':{ color:'#10b981' } }} />
                   </TableCell>
+                  <TableCell><TextField variant="outlined" size="small" fullWidth value={row.cd} sx={inputSx}
+                    error={!!errors[i]?.cd} helperText={errors[i]?.cd} onChange={e=>handleChange(i,"cd",e.target.value)} /></TableCell>
+                  <TableCell><TextField variant="outlined" size="small" fullWidth value={row.cdName} sx={inputSx}
+                    error={!!errors[i]?.cdName} helperText={errors[i]?.cdName} onChange={e=>handleChange(i,"cdName",e.target.value)} /></TableCell>
+                  <TableCell><TextField variant="outlined" size="small" fullWidth value={row.note??""} sx={inputSx}
+                    error={!!errors[i]?.note} helperText={errors[i]?.note} onChange={e=>handleChange(i,"note",e.target.value)} /></TableCell>
+                  <TableCell><TextField variant="outlined" size="small" fullWidth value={row.biko??""} sx={inputSx}
+                    error={!!errors[i]?.biko} helperText={errors[i]?.biko} onChange={e=>handleChange(i,"biko",e.target.value)} /></TableCell>
                   <TableCell>
-                    <TextField variant="outlined" size="small" sx={{ width: "100%" }}
-                      value={row.cd}
-                      error={!!groupCodeErrors[index]?.cd}
-                      helperText={groupCodeErrors[index]?.cd}
-                      onChange={(e) => handleGroupCodeChange(index, "cd", e.target.value)} />
-                  </TableCell>
-                  <TableCell>
-                    <TextField variant="outlined" size="small" sx={{ width: "100%" }}
-                      value={row.cdName}
-                      error={!!groupCodeErrors[index]?.cdName}
-                      helperText={groupCodeErrors[index]?.cdName}
-                      onChange={(e) => handleGroupCodeChange(index, "cdName", e.target.value)} />
-                  </TableCell>
-                  <TableCell>
-                    <TextField variant="outlined" size="small" sx={{ width: "100%" }}
-                      value={row.note ?? ""}
-                      error={!!groupCodeErrors[index]?.note}
-                      helperText={groupCodeErrors[index]?.note}
-                      onChange={(e) => handleGroupCodeChange(index, "note", e.target.value)} />
-                  </TableCell>
-                  <TableCell>
-                    <TextField variant="outlined" size="small" sx={{ width: "100%" }}
-                      value={row.biko ?? ""}
-                      error={!!groupCodeErrors[index]?.biko}
-                      helperText={groupCodeErrors[index]?.biko}
-                      onChange={(e) => handleGroupCodeChange(index, "biko", e.target.value)} />
-                  </TableCell>
-                  <TableCell>
-                    <Select value={row.yukoFlag} size="small" fullWidth
-                      onChange={(e) => handleGroupCodeChange(index, "yukoFlag", e.target.value)}>
-                      <MenuItem value="1">有効</MenuItem>
-                      <MenuItem value="0">無効</MenuItem>
+                    <Select value={row.yukoFlag} size="small" fullWidth sx={selSx} onChange={e=>handleChange(i,"yukoFlag",e.target.value)}>
+                      <MenuItem value="1">✅ 有効</MenuItem><MenuItem value="0">❌ 無効</MenuItem>
                     </Select>
                   </TableCell>
                 </TableRow>
@@ -253,9 +135,8 @@ const GroupCodeMasterTab = () => {
             </TableBody>
           </Table>
         </TableContainer>
-      </Paper>
-    </div>
+      </Box>
+    </Box>
   );
 };
-
 export default GroupCodeMasterTab;
