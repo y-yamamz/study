@@ -75,83 +75,11 @@ const LoginPage = () => {
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        width: '46%',
+        width: '0%',
         position: 'relative',
         overflow: 'hidden',
         background: 'linear-gradient(145deg, #f0eeff 0%, #e0e7ff 50%, #fce7f3 100%)',
       }}>
-        {/* Dot pattern overlay */}
-        <Box sx={{
-          position:'absolute', inset:0,
-          backgroundImage: 'radial-gradient(circle, rgba(99,102,241,0.18) 1.5px, transparent 1.5px)',
-          backgroundSize: '28px 28px',
-        }} />
-
-        {/* Animated blobs */}
-        <Box sx={{
-          position:'absolute', width:380, height:380,
-          borderRadius:'60% 40% 55% 45% / 50% 60% 40% 50%',
-          background: 'linear-gradient(135deg, rgba(99,102,241,0.25), rgba(139,92,246,0.2))',
-          top:'5%', left:'-8%',
-          animation: 'blob-1 18s ease-in-out infinite',
-          filter: 'blur(2px)',
-        }} />
-        <Box sx={{
-          position:'absolute', width:300, height:300,
-          borderRadius:'40% 60% 45% 55% / 55% 45% 60% 40%',
-          background: 'linear-gradient(135deg, rgba(244,63,94,0.2), rgba(236,72,153,0.18))',
-          bottom:'10%', right:'-5%',
-          animation: 'blob-2 22s ease-in-out infinite',
-          filter: 'blur(2px)',
-        }} />
-        <Box sx={{
-          position:'absolute', width:200, height:200,
-          borderRadius:'50%',
-          background: 'linear-gradient(135deg, rgba(245,158,11,0.22), rgba(16,185,129,0.18))',
-          bottom:'30%', left:'15%',
-          animation: 'blob-3 14s ease-in-out infinite',
-          filter: 'blur(1px)',
-        }} />
-
-        {/* Center illustration content */}
-        <Box sx={{ position:'relative', zIndex:1, textAlign:'center', px:4 }}>
-          {/* Big emoji icon */}
-          <Box sx={{
-            fontSize: '80px', mb:2, lineHeight:1,
-            animation: 'wiggle 3s ease-in-out infinite',
-            display: 'inline-block',
-          }}>
-            ✅
-          </Box>
-          <Typography sx={{
-            fontWeight: 800, fontSize:'2.2rem', lineHeight:1.2,
-            background: 'linear-gradient(135deg, #4f46e5, #8b5cf6, #ec4899)',
-            backgroundClip:'text', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent',
-            backgroundSize:'200% auto', animation:'shimmer-bright 4s linear infinite',
-            mb: 2,
-          }}>
-            TODO Manager
-          </Typography>
-          <Typography sx={{ color:'#6b7280', fontSize:'1rem', lineHeight:1.7, maxWidth:280, mx:'auto' }}>
-            チームのタスクを一元管理。<br />
-            シンプルに、スマートに、<br />
-            <Box component="span" sx={{ color:'#6366f1', fontWeight:700 }}>もっと楽しく。</Box>
-          </Typography>
-
-          {/* Feature pills */}
-          <Box sx={{ display:'flex', flexWrap:'wrap', gap:1, justifyContent:'center', mt:3 }}>
-            {['✦ リアルタイム同期', '◈ プロジェクト管理', '◎ チーム共有'].map((t,i) => (
-              <Box key={i} sx={{
-                px:2, py:0.6, borderRadius:20,
-                background: i===0 ? 'rgba(99,102,241,0.12)' : i===1 ? 'rgba(244,63,94,0.1)' : 'rgba(16,185,129,0.1)',
-                color: i===0 ? '#6366f1' : i===1 ? '#f43f5e' : '#10b981',
-                fontSize:'0.78rem', fontWeight:600,
-                border: `1px solid ${i===0?'rgba(99,102,241,0.2)':i===1?'rgba(244,63,94,0.18)':'rgba(16,185,129,0.18)'}`,
-                animation: `float-up 0.6s ${0.2*i}s both ease`,
-              }}>{t}</Box>
-            ))}
-          </Box>
-        </Box>
 
         {/* Decorative circles */}
         {[
@@ -207,6 +135,17 @@ const LoginPage = () => {
               fontSize:'28px', boxShadow:'0 8px 28px rgba(99,102,241,0.4)',
               animation:'bounce-in 0.8s cubic-bezier(0.34,1.56,0.64,1)',
             }}>✦</Box>
+
+          <Typography sx={{
+            fontWeight: 800, fontSize:'2.2rem', lineHeight:1.2,
+            background: 'linear-gradient(135deg, #4f46e5, #8b5cf6, #ec4899)',
+            backgroundClip:'text', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent',
+            backgroundSize:'200% auto', animation:'shimmer-bright 4s linear infinite',
+            mb: 2,
+          }}>
+            TODO Manager
+          </Typography>
+
             <Typography sx={{
               fontWeight:800, fontSize:'1.75rem', letterSpacing:'-0.03em', color:'#1e1b4b',
             }}>
