@@ -1,5 +1,5 @@
 import type { Dispatch, SetStateAction } from "react";
-import { SERVICE_URL } from '../constants/const';
+import { apiFetch } from './apiClient';
 
 /** システムマスタインターフェース */
 export interface MstSystem {
@@ -40,6 +40,19 @@ export interface MstGroupCode {
   yukoFlag: string;
 }
 
+/** ユーザーマスタインターフェース */
+export interface MstUser {
+  userId: string;
+  userName: string;
+  /** フロントエンドへの返却時は空文字（マスク済み）。入力用は plainPassword を使う */
+  passwordHash: string;
+  /** 入力用平文パスワード。空文字の場合はパスワード変更なし */
+  plainPassword: string;
+  roleCd: string;
+  email: string;
+  yukoFlag: string;
+}
+
 /** エラー状態の型 */
 export type RowErrors = { [idx: number]: { [field: string]: string } };
 
@@ -48,11 +61,8 @@ export type RowErrors = { [idx: number]: { [field: string]: string } };
  * @returns システムマスタリスト
  */
 export const getSystemList = async (): Promise<MstSystem[]> => {
-  const res = await fetch(SERVICE_URL.BASE_URL + "api/getMstSystemList", {
+  const res = await apiFetch("api/getMstSystemList", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
   });
 
   if (!res.ok) {
@@ -68,11 +78,8 @@ export const getSystemList = async (): Promise<MstSystem[]> => {
  * @returns 処理結果
  */
 export const saveSystemList = async (list: MstSystem[]) => {
-  const res = await fetch(SERVICE_URL.BASE_URL + "api/saveMstSystem", {
+  const res = await apiFetch("api/saveMstSystem", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
     body: JSON.stringify(list),
   });
 
@@ -89,9 +96,8 @@ export const saveSystemList = async (list: MstSystem[]) => {
  * @returns 処理結果
  */
 export const deleteSystemList = async (list: MstSystem[]) => {
-  const res = await fetch(SERVICE_URL.BASE_URL + "api/deleteMstSystem", {
+  const res = await apiFetch("api/deleteMstSystem", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(list),
   });
   if (!res.ok) throw new Error("fetch failed");
@@ -103,11 +109,8 @@ export const deleteSystemList = async (list: MstSystem[]) => {
  * @returns プロジェクトマスタリスト
  */
 export const getProjectList = async (): Promise<MstProject[]> => {
-  const res = await fetch(SERVICE_URL.BASE_URL + "api/getMstProjectList", {
+  const res = await apiFetch("api/getMstProjectList", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
   });
 
   if (!res.ok) {
@@ -123,11 +126,8 @@ export const getProjectList = async (): Promise<MstProject[]> => {
  * @returns 処理結果
  */
 export const saveProjectList = async (list: MstProject[]) => {
-  const res = await fetch(SERVICE_URL.BASE_URL + "api/saveMstProject", {
+  const res = await apiFetch("api/saveMstProject", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
     body: JSON.stringify(list),
   });
 
@@ -144,9 +144,8 @@ export const saveProjectList = async (list: MstProject[]) => {
  * @returns 処理結果
  */
 export const deleteProjectList = async (list: MstProject[]) => {
-  const res = await fetch(SERVICE_URL.BASE_URL + "api/deleteMstProject", {
+  const res = await apiFetch("api/deleteMstProject", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(list),
   });
   if (!res.ok) throw new Error("fetch failed");
@@ -158,11 +157,8 @@ export const deleteProjectList = async (list: MstProject[]) => {
  * @returns コードマスタリスト
  */
 export const getCodeList = async (): Promise<MstCode[]> => {
-  const res = await fetch(SERVICE_URL.BASE_URL + "api/getMstCodeList", {
+  const res = await apiFetch("api/getMstCodeList", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
   });
 
   if (!res.ok) {
@@ -178,11 +174,8 @@ export const getCodeList = async (): Promise<MstCode[]> => {
  * @returns 処理結果
  */
 export const saveCodeList = async (list: MstCode[]) => {
-  const res = await fetch(SERVICE_URL.BASE_URL + "api/saveMstCode", {
+  const res = await apiFetch("api/saveMstCode", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
     body: JSON.stringify(list),
   });
 
@@ -199,9 +192,8 @@ export const saveCodeList = async (list: MstCode[]) => {
  * @returns 処理結果
  */
 export const deleteCodeList = async (list: MstCode[]) => {
-  const res = await fetch(SERVICE_URL.BASE_URL + "api/deleteMstCode", {
+  const res = await apiFetch("api/deleteMstCode", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(list),
   });
   if (!res.ok) throw new Error("fetch failed");
@@ -213,11 +205,8 @@ export const deleteCodeList = async (list: MstCode[]) => {
  * @returns コードグループマスタリスト
  */
 export const getGroupCodeList = async (): Promise<MstGroupCode[]> => {
-  const res = await fetch(SERVICE_URL.BASE_URL + "api/getMstGroupCodeList", {
+  const res = await apiFetch("api/getMstGroupCodeList", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
   });
 
   if (!res.ok) {
@@ -233,11 +222,8 @@ export const getGroupCodeList = async (): Promise<MstGroupCode[]> => {
  * @returns 処理結果
  */
 export const saveGroupCodeList = async (list: MstGroupCode[]) => {
-  const res = await fetch(SERVICE_URL.BASE_URL + "api/saveMstGroupCode", {
+  const res = await apiFetch("api/saveMstGroupCode", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
     body: JSON.stringify(list),
   });
 
@@ -254,9 +240,48 @@ export const saveGroupCodeList = async (list: MstGroupCode[]) => {
  * @returns 処理結果
  */
 export const deleteGroupCodeList = async (list: MstGroupCode[]) => {
-  const res = await fetch(SERVICE_URL.BASE_URL + "api/deleteMstGroupCode", {
+  const res = await apiFetch("api/deleteMstGroupCode", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(list),
+  });
+  if (!res.ok) throw new Error("fetch failed");
+  return await res.json();
+};
+
+/**
+ * ユーザーマスタの全件リストを取得する
+ * @returns ユーザーマスタリスト（パスワードハッシュはマスク済み）
+ */
+export const getUserList = async (): Promise<MstUser[]> => {
+  const res = await apiFetch("api/getMstUserList", {
+    method: "POST",
+  });
+  if (!res.ok) throw new Error("fetch failed");
+  return await res.json();
+};
+
+/**
+ * ユーザーマスタを登録・更新する
+ * @param list ユーザーマスタリスト
+ * @returns 処理結果
+ */
+export const saveUserList = async (list: MstUser[]) => {
+  const res = await apiFetch("api/saveMstUser", {
+    method: "POST",
+    body: JSON.stringify(list),
+  });
+  if (!res.ok) throw new Error("fetch failed");
+  return await res.json();
+};
+
+/**
+ * ユーザーマスタを削除する
+ * @param list 削除対象リスト
+ * @returns 処理結果
+ */
+export const deleteUserList = async (list: MstUser[]) => {
+  const res = await apiFetch("api/deleteMstUser", {
+    method: "POST",
     body: JSON.stringify(list),
   });
   if (!res.ok) throw new Error("fetch failed");

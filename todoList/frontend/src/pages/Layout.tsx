@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, Outlet } from "react-router-dom";
 import Header from "../components/Header";
 import styles from './Layout.module.css';
-import { SERVICE_URL } from "../constants/const";
+import { apiFetch } from "../common/apiClient";
 
 
 interface MenuListDto{
@@ -20,13 +20,10 @@ const getMenuList = async (): Promise<MenuListDto[]>  => {
         url:""
       }
 
-      const res = await fetch(SERVICE_URL.BASE_URL + "api/menuList", {
+      const res = await apiFetch("api/menuList", {
         method:"POST",
-        headers:{
-          "Content-Type": "application/json",
-        },
         body:JSON.stringify(data),
-      } );
+      });
 
       if(!res.ok){
         throw new Error("fetch failed");
@@ -59,20 +56,20 @@ export const Layout = () => {
 
   return (
     <>  
-        <table>
+        <table style={{ width: "100%", tableLayout: "fixed" }}>
             <thead>
                 <tr className={styles.mythead}>
-                    <td >
+                    <td>
                         <Header/>
                     </td>
                 </tr>
             </thead>
             <tbody>
                 <tr>
-                    <td>
-                        <main style={{ display: "flex", height: "100vh" }}>
-                        <section style={{ width: 200, borderRight: "1px solid #ccc" }}>
-                            
+                    <td style={{ width: "100%" }}>
+                        <main style={{ display: "flex", height: "100vh", overflow: "hidden" }}>
+                        <section style={{ width: 200, flexShrink: 0, borderRight: "1px solid #ccc" }}>
+
                             {menus.map(menu => (
                                 <Link
                                 key={menu.id}
@@ -82,10 +79,10 @@ export const Layout = () => {
                                 {menu.name}
                                 </Link>
                             ))}
-                            
+
                         </section>
 
-                        <section style={{ flex: 1, padding: 16 }}>
+                        <section style={{ flex: 1, minWidth: 0, padding: 16, overflowY: "auto", overflowX: "hidden" }}>
                             {/* ← ここが差し替わる */}
                             <Outlet />
                         </section>

@@ -4,6 +4,7 @@ import SystemMasterTab from './master/SystemMasterTab';
 import ProjectMasterTab from './master/ProjectMasterTab';
 import CodeMasterTab from './master/CodeMasterTab';
 import GroupCodeMasterTab from './master/GroupCodeMasterTab';
+import UserMasterTab from './master/UserMasterTab';
 
 /**
  * マスタ管理ページ
@@ -19,11 +20,13 @@ const MasterPage = () => {
         <Tab label="プロジェクトマスタ" />
         <Tab label="コードマスタ" />
         <Tab label="コードグループマスタ" />
+        <Tab label="ユーザーマスタ" />
       </Tabs>
       {tabIndex === 0 && <SystemMasterTab />}
       {tabIndex === 1 && <ProjectMasterTab />}
       {tabIndex === 2 && <CodeMasterTab />}
       {tabIndex === 3 && <GroupCodeMasterTab />}
+      {tabIndex === 4 && <UserMasterTab />}
     </div>
   );
 };

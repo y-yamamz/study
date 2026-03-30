@@ -1,0 +1,56 @@
+# ============================================================
+# TodoList アプリケーション Docker Compose 設定
+#
+# 【アクセスURL】
+#   http://localhost  または  http://<サーバーのIPアドレス>
+#
+# 【起動方法】
+#   このファイルがあるディレクトリで実行:
+#   docker compose up -d --build
+#
+# 【停止方法】
+#   docker compose down
+#
+# 【注意】
+#   MySQL は既存サーバー (192.168.0.17:3306) を使用します。
+#   Docker ホストから 192.168.0.17 へ疎通できることを確認してください。
+# ============================================================
+
+services:
+
+  # --------------------------
+  # Spring Boot バックエンド
+  # コンテナ内部のみ (port 8080 は外部に公開しない)
+  # --------------------------
+  backend:
+    build:
+      context: ../..
+      dockerfile: Doc/Deploy/backend/Dockerfile
+    container_name: todolist-backend
+    environment:
+      SPRING_DATASOURCE_URL: "jdbc:mysql://192.168.0.17:3306/tododb?useSSL=false&serverTimezone=Asia/Tokyo&allowPublicKeyRetrieval=true"
+      SPRING_DATASOURCE_USERNAME: yama
+      SPRING_DATASOURCE_PASSWORD: yama
+    networks:
+      - app-network
+
+  # --------------------------
+  # React フロントエンド (nginx リバースプロキシ)
+  # ポート: 80  →  http://localhost でアクセス
+  # /api/* へのリクエストは backend:8080 に転送
+  # --------------------------
+  frontend:
+    build:
+      context: ../..
+      dockerfile: Doc/Deploy/frontend/Dockerfile
+    container_name: todolist-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge

@@ -12,12 +12,16 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.example.backend.dto.LoginRequest;
+import com.example.backend.dto.LoginResponse;
 import com.example.backend.dto.MenuListDao;
 import com.example.backend.dto.TodoListDataDto;
+import com.example.backend.service.AuthService;
 import com.example.backend.service.MMenuService;
 import com.example.backend.service.OllamaService;
 import com.example.backend.service.TodoListService;
 
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 
 //@CrossOrigin(origins = "http://localhost:5173")
@@ -28,6 +32,7 @@ public class UserController {
     private final MMenuService mMenuService;
     private final TodoListService todoListService;
     private final OllamaService ollamaService;
+    private final AuthService authService;
 
 
     @GetMapping("/test")
@@ -58,8 +63,13 @@ public class UserController {
     }
 
     @PostMapping("/userLogin")
-    public String userLogin(@RequestBody UserForm user) {
-        return "OK";
+    public ResponseEntity<?> userLogin(@RequestBody LoginRequest request, HttpServletRequest httpRequest) {
+        try {
+            LoginResponse response = authService.login(request, httpRequest);
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(401).body("{\"error\":\"" + e.getMessage() + "\"}");
+        }
     }
 
     @GetMapping("/test5")

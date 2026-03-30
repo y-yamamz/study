@@ -43,6 +43,12 @@ export const Messages = {
       note: "内容は1000文字以内で入力してください。",
       biko: "備考は2000文字以内で入力してください。",
     },
+    user: {
+      userId: "ユーザーIDは20文字以内で入力してください。",
+      userName: "ユーザー名は100文字以内で入力してください。",
+      email: "メールアドレスは255文字以内で入力してください。",
+      plainPassword: "パスワードは8文字以上で入力してください。",
+    },
   },
 
   /** フィールド最大文字数（DB定義に基づく） */
@@ -59,5 +65,9 @@ export const Messages = {
     biko: 2000,
     ticketNo: 8,
     revisionNo: 50,
+    userId: 20,
+    userName: 100,
+    email: 255,
+    plainPasswordMin: 8,
   },
 };

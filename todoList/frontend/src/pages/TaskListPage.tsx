@@ -7,7 +7,7 @@ import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Select from "@mui/material/Select";
 import { useEffect, useState } from "react";
-import { SERVICE_URL } from '../constants/const';
+import { apiFetch } from '../common/apiClient';
 import { Messages } from '../constants/messages';
 import Button from '@mui/material/Button';
 import { Checkbox, MenuItem, Stack, TextField } from '@mui/material';
@@ -61,13 +61,9 @@ type RowErrors = { [idx: number]: { [field: string]: string } };
  * @returns
  */
 const getTaskList = async (): Promise<TodoList[]>  => {
-      const res = await fetch(SERVICE_URL.BASE_URL + "api/todoList", {
+      const res = await apiFetch("api/todoList", {
         method:"POST",
-        headers:{
-          "Content-Type": "application/json",
-        },
-
-      } );
+      });
 
       if(!res.ok){
         throw new Error("fetch failed");
@@ -79,16 +75,13 @@ const getTaskList = async (): Promise<TodoList[]>  => {
 const getProjectList = async (): Promise<MstProject[]>  => {
       const data: MstProject = {
         systemCd:"001",
-        Cd:"",
+        cd:"",
         projectName:""
       }
-      const res = await fetch(SERVICE_URL.BASE_URL + "api/getMstProjectCbbList", {
+      const res = await apiFetch("api/getMstProjectCbbList", {
         method:"POST",
-        headers:{
-          "Content-Type": "application/json",
-        },
         body:JSON.stringify(data),
-      } );
+      });
 
       if(!res.ok){
         throw new Error("fetch failed");
@@ -106,15 +99,13 @@ const getProgressStatusName = async():Promise<MstCode[]> => {
       const data: MstCode = {
         grCd:"001",
         cd:"",
-        cdName:""
+        cdName:"",
+        color:""
       }
-      const res = await fetch(SERVICE_URL.BASE_URL + "api/getMstCodeCbbList", {
+      const res = await apiFetch("api/getMstCodeCbbList", {
         method:"POST",
-        headers:{
-          "Content-Type": "application/json",
-        },
         body:JSON.stringify(data),
-      } );
+      });
       if(!res.ok){
         throw new Error("fetch failed");
       }
@@ -130,15 +121,13 @@ const getDeployStatusName = async():Promise<MstCode[]> => {
       const data: MstCode = {
         grCd:"002",
         cd:"",
-        cdName:""
+        cdName:"",
+        color:""
       }
-      const res = await fetch(SERVICE_URL.BASE_URL + "api/getMstCodeCbbList", {
+      const res = await apiFetch("api/getMstCodeCbbList", {
         method:"POST",
-        headers:{
-          "Content-Type": "application/json",
-        },
         body:JSON.stringify(data),
-      } );
+      });
       if(!res.ok){
         throw new Error("fetch failed");
       }
@@ -152,11 +141,8 @@ const getDeployStatusName = async():Promise<MstCode[]> => {
  * @returns 処理結果
  */
 const deleteTask = async (tasks: TodoList[]) => {
-  const res = await fetch(SERVICE_URL.BASE_URL + "api/todoDelete", {
+  const res = await apiFetch("api/todoDelete", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
     body: JSON.stringify(tasks),
   });
 
@@ -173,13 +159,10 @@ const deleteTask = async (tasks: TodoList[]) => {
  * @returns
  */
 const createTask = async (tasks:TodoList[]) => {
-  const res = await fetch(SERVICE_URL.BASE_URL + "api/todoRegister", {
+  const res = await apiFetch("api/todoRegister", {
     method:"POST",
-    headers:{
-      "Content-Type": "application/json",
-    },
     body:JSON.stringify(tasks),
-  } );
+  });
 
   if(!res.ok){
     throw new Error("fetch failed");
@@ -426,7 +409,7 @@ const TaskListPage = () => {
 
 
   return (
-    <div>
+    <div style={{ width: "100%", minWidth: 0 }}>
       {/* 絞込みエリア */}
       <Stack direction="row" spacing={2} sx={{ mb: 1 }} alignItems="center">
         <Select value={filterProjectCd} size="small" displayEmpty sx={{ minWidth: 150 }}
@@ -454,7 +437,7 @@ const TaskListPage = () => {
           絞込
         </Button>
       </Stack>
-      <Stack direction="row" spacing={2} sx={{mb:2}} alignItems="center">
+      <Stack direction="row" spacing={2} sx={{ mb: 2 }} alignItems="center">
         <Button variant="contained" color="primary" onClick={handleRegister}>
           登録
         </Button>
@@ -470,9 +453,8 @@ const TaskListPage = () => {
           <span style={{ color: "#d32f2f" }}>{selectedKeys.size} 件選択中</span>
         )}
       </Stack>
-      <Paper sx={{ width: "100%", overflow: "hidden" }}>
-        <TableContainer component={Paper} sx={{ maxHeight: 400 ,overflow: "auto"}}>
-          <Table sx={{ minWidth: 700 }} aria-label="simple table" stickyHeader>
+      <TableContainer component={Paper} sx={{ maxHeight: 400, width: "100%", overflowX: "auto", overflowY: "auto" }}>
+          <Table sx={{ minWidth: 1300 }} aria-label="simple table" stickyHeader>
             <TableHead>
               <TableRow>
                 <TableCell padding="checkbox" sx={{ backgroundColor: "#90bef3dc" }}>
@@ -581,8 +563,7 @@ const TaskListPage = () => {
               })}
             </TableBody>
           </Table>
-        </TableContainer>
-      </Paper>
+      </TableContainer>
     </div>
   )
 }

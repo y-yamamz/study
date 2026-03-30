@@ -15,10 +15,12 @@ import com.example.backend.service.MstCodeService;
 import com.example.backend.service.MstGroupCodeService;
 import com.example.backend.service.MstProjectService;
 import com.example.backend.service.MstSystemService;
+import com.example.backend.service.MstUserService;
 import com.example.backend.dto.MCodeDto;
 import com.example.backend.dto.MGroupCodeDto;
 import com.example.backend.dto.MProjectDto;
 import com.example.backend.dto.MSystemDto;
+import com.example.backend.dto.MUserDto;
 import lombok.RequiredArgsConstructor;
 
 
@@ -30,6 +32,7 @@ public class MasterController {
     private final MstProjectService mstProjectService;
     private final MstCodeService mstCodeService;
     private final MstGroupCodeService mstGroupCodeService;
+    private final MstUserService mstUserService;
 
     /**
      * システムマスタのコンボボックス用リストを取得する
@@ -234,6 +237,50 @@ public class MasterController {
     @Transactional
     public ResponseEntity<Map<String, Object>> deleteMstGroupCode(@RequestBody List<MGroupCodeDto> dtoList) {
         mstGroupCodeService.delete(dtoList);
+
+        Map<String, Object> res = new HashMap<>();
+        res.put("status", "OK");
+        res.put("message", "削除完了");
+
+        return ResponseEntity.ok(res);
+    }
+
+    /**
+     * ユーザーマスタの管理画面用全件リストを取得する（パスワードハッシュはマスク済み）
+     * @return ユーザーマスタDTOリスト
+     */
+    @PostMapping("/getMstUserList")
+    public List<MUserDto> postMstUserList() {
+        return mstUserService.getListData();
+    }
+
+    /**
+     * ユーザーマスタを登録・更新する
+     * plainPassword が空でない場合は bcrypt でハッシュ化して保存する
+     * @param dtoList ユーザーマスタDTOリスト
+     * @return 処理結果（status, message）
+     */
+    @PostMapping("/saveMstUser")
+    @Transactional
+    public ResponseEntity<Map<String, Object>> saveMstUser(@RequestBody List<MUserDto> dtoList) {
+        mstUserService.save(dtoList);
+
+        Map<String, Object> res = new HashMap<>();
+        res.put("status", "OK");
+        res.put("message", "登録完了");
+
+        return ResponseEntity.ok(res);
+    }
+
+    /**
+     * ユーザーマスタを削除する
+     * @param dtoList 削除対象のユーザーマスタDTOリスト
+     * @return 処理結果（status, message）
+     */
+    @PostMapping("/deleteMstUser")
+    @Transactional
+    public ResponseEntity<Map<String, Object>> deleteMstUser(@RequestBody List<MUserDto> dtoList) {
+        mstUserService.delete(dtoList);
 
         Map<String, Object> res = new HashMap<>();
         res.put("status", "OK");

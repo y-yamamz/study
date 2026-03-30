@@ -1,0 +1,306 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.backend.db.mapper.TRefreshTokenMapper">
+  <resultMap id="BaseResultMap" type="com.example.backend.db.entity.TRefreshToken">
+    <id column="TOKEN_ID" jdbcType="BIGINT" property="tokenId" />
+    <result column="USER_ID" jdbcType="VARCHAR" property="userId" />
+    <result column="TOKEN_HASH" jdbcType="VARCHAR" property="tokenHash" />
+    <result column="REVOKED_FLAG" jdbcType="CHAR" property="revokedFlag" />
+    <result column="EXPIRES_AT" jdbcType="TIMESTAMP" property="expiresAt" />
+    <result column="USER_AGENT" jdbcType="VARCHAR" property="userAgent" />
+    <result column="IP_ADDRESS" jdbcType="VARCHAR" property="ipAddress" />
+    <result column="INS_DATE" jdbcType="TIMESTAMP" property="insDate" />
+    <result column="INS_USER_ID" jdbcType="VARCHAR" property="insUserId" />
+    <result column="UPD_DATE" jdbcType="TIMESTAMP" property="updDate" />
+    <result column="UPD_USER_ID" jdbcType="VARCHAR" property="updUserId" />
+  </resultMap>
+  <sql id="Example_Where_Clause">
+    <where>
+      <foreach collection="oredCriteria" item="criteria" separator="or">
+        <if test="criteria.valid">
+          <trim prefix="(" prefixOverrides="and" suffix=")">
+            <foreach collection="criteria.criteria" item="criterion">
+              <choose>
+                <when test="criterion.noValue">
+                  and ${criterion.condition}
+                </when>
+                <when test="criterion.singleValue">
+                  and ${criterion.condition} #{criterion.value}
+                </when>
+                <when test="criterion.betweenValue">
+                  and ${criterion.condition} #{criterion.value} and #{criterion.secondValue}
+                </when>
+                <when test="criterion.listValue">
+                  and ${criterion.condition}
+                  <foreach close=")" collection="criterion.value" item="listItem" open="(" separator=",">
+                    #{listItem}
+                  </foreach>
+                </when>
+              </choose>
+            </foreach>
+          </trim>
+        </if>
+      </foreach>
+    </where>
+  </sql>
+  <sql id="Update_By_Example_Where_Clause">
+    <where>
+      <foreach collection="example.oredCriteria" item="criteria" separator="or">
+        <if test="criteria.valid">
+          <trim prefix="(" prefixOverrides="and" suffix=")">
+            <foreach collection="criteria.criteria" item="criterion">
+              <choose>
+                <when test="criterion.noValue">
+                  and ${criterion.condition}
+                </when>
+                <when test="criterion.singleValue">
+                  and ${criterion.condition} #{criterion.value}
+                </when>
+                <when test="criterion.betweenValue">
+                  and ${criterion.condition} #{criterion.value} and #{criterion.secondValue}
+                </when>
+                <when test="criterion.listValue">
+                  and ${criterion.condition}
+                  <foreach close=")" collection="criterion.value" item="listItem" open="(" separator=",">
+                    #{listItem}
+                  </foreach>
+                </when>
+              </choose>
+            </foreach>
+          </trim>
+        </if>
+      </foreach>
+    </where>
+  </sql>
+  <sql id="Base_Column_List">
+    TOKEN_ID, USER_ID, TOKEN_HASH, REVOKED_FLAG, EXPIRES_AT, USER_AGENT, IP_ADDRESS, 
+    INS_DATE, INS_USER_ID, UPD_DATE, UPD_USER_ID
+  </sql>
+  <select id="selectByExample" parameterType="com.example.backend.db.entity.TRefreshTokenExample" resultMap="BaseResultMap">
+    select
+    <if test="distinct">
+      distinct
+    </if>
+    <include refid="Base_Column_List" />
+    from T_REFRESH_TOKEN
+    <if test="_parameter != null">
+      <include refid="Example_Where_Clause" />
+    </if>
+    <if test="orderByClause != null">
+      order by ${orderByClause}
+    </if>
+  </select>
+  <select id="selectByPrimaryKey" parameterType="java.lang.Long" resultMap="BaseResultMap">
+    select 
+    <include refid="Base_Column_List" />
+    from T_REFRESH_TOKEN
+    where TOKEN_ID = #{tokenId,jdbcType=BIGINT}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Long">
+    delete from T_REFRESH_TOKEN
+    where TOKEN_ID = #{tokenId,jdbcType=BIGINT}
+  </delete>
+  <delete id="deleteByExample" parameterType="com.example.backend.db.entity.TRefreshTokenExample">
+    delete from T_REFRESH_TOKEN
+    <if test="_parameter != null">
+      <include refid="Example_Where_Clause" />
+    </if>
+  </delete>
+  <insert id="insert" parameterType="com.example.backend.db.entity.TRefreshToken">
+    insert into T_REFRESH_TOKEN (TOKEN_ID, USER_ID, TOKEN_HASH, 
+      REVOKED_FLAG, EXPIRES_AT, USER_AGENT, 
+      IP_ADDRESS, INS_DATE, INS_USER_ID, 
+      UPD_DATE, UPD_USER_ID)
+    values (#{tokenId,jdbcType=BIGINT}, #{userId,jdbcType=VARCHAR}, #{tokenHash,jdbcType=VARCHAR}, 
+      #{revokedFlag,jdbcType=CHAR}, #{expiresAt,jdbcType=TIMESTAMP}, #{userAgent,jdbcType=VARCHAR}, 
+      #{ipAddress,jdbcType=VARCHAR}, #{insDate,jdbcType=TIMESTAMP}, #{insUserId,jdbcType=VARCHAR}, 
+      #{updDate,jdbcType=TIMESTAMP}, #{updUserId,jdbcType=VARCHAR})
+  </insert>
+  <insert id="insertSelective" parameterType="com.example.backend.db.entity.TRefreshToken">
+    insert into T_REFRESH_TOKEN
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="tokenId != null">
+        TOKEN_ID,
+      </if>
+      <if test="userId != null">
+        USER_ID,
+      </if>
+      <if test="tokenHash != null">
+        TOKEN_HASH,
+      </if>
+      <if test="revokedFlag != null">
+        REVOKED_FLAG,
+      </if>
+      <if test="expiresAt != null">
+        EXPIRES_AT,
+      </if>
+      <if test="userAgent != null">
+        USER_AGENT,
+      </if>
+      <if test="ipAddress != null">
+        IP_ADDRESS,
+      </if>
+      <if test="insDate != null">
+        INS_DATE,
+      </if>
+      <if test="insUserId != null">
+        INS_USER_ID,
+      </if>
+      <if test="updDate != null">
+        UPD_DATE,
+      </if>
+      <if test="updUserId != null">
+        UPD_USER_ID,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides=",">
+      <if test="tokenId != null">
+        #{tokenId,jdbcType=BIGINT},
+      </if>
+      <if test="userId != null">
+        #{userId,jdbcType=VARCHAR},
+      </if>
+      <if test="tokenHash != null">
+        #{tokenHash,jdbcType=VARCHAR},
+      </if>
+      <if test="revokedFlag != null">
+        #{revokedFlag,jdbcType=CHAR},
+      </if>
+      <if test="expiresAt != null">
+        #{expiresAt,jdbcType=TIMESTAMP},
+      </if>
+      <if test="userAgent != null">
+        #{userAgent,jdbcType=VARCHAR},
+      </if>
+      <if test="ipAddress != null">
+        #{ipAddress,jdbcType=VARCHAR},
+      </if>
+      <if test="insDate != null">
+        #{insDate,jdbcType=TIMESTAMP},
+      </if>
+      <if test="insUserId != null">
+        #{insUserId,jdbcType=VARCHAR},
+      </if>
+      <if test="updDate != null">
+        #{updDate,jdbcType=TIMESTAMP},
+      </if>
+      <if test="updUserId != null">
+        #{updUserId,jdbcType=VARCHAR},
+      </if>
+    </trim>
+  </insert>
+  <select id="countByExample" parameterType="com.example.backend.db.entity.TRefreshTokenExample" resultType="java.lang.Long">
+    select count(*) from T_REFRESH_TOKEN
+    <if test="_parameter != null">
+      <include refid="Example_Where_Clause" />
+    </if>
+  </select>
+  <update id="updateByExampleSelective" parameterType="map">
+    update T_REFRESH_TOKEN
+    <set>
+      <if test="row.tokenId != null">
+        TOKEN_ID = #{row.tokenId,jdbcType=BIGINT},
+      </if>
+      <if test="row.userId != null">
+        USER_ID = #{row.userId,jdbcType=VARCHAR},
+      </if>
+      <if test="row.tokenHash != null">
+        TOKEN_HASH = #{row.tokenHash,jdbcType=VARCHAR},
+      </if>
+      <if test="row.revokedFlag != null">
+        REVOKED_FLAG = #{row.revokedFlag,jdbcType=CHAR},
+      </if>
+      <if test="row.expiresAt != null">
+        EXPIRES_AT = #{row.expiresAt,jdbcType=TIMESTAMP},
+      </if>
+      <if test="row.userAgent != null">
+        USER_AGENT = #{row.userAgent,jdbcType=VARCHAR},
+      </if>
+      <if test="row.ipAddress != null">
+        IP_ADDRESS = #{row.ipAddress,jdbcType=VARCHAR},
+      </if>
+      <if test="row.insDate != null">
+        INS_DATE = #{row.insDate,jdbcType=TIMESTAMP},
+      </if>
+      <if test="row.insUserId != null">
+        INS_USER_ID = #{row.insUserId,jdbcType=VARCHAR},
+      </if>
+      <if test="row.updDate != null">
+        UPD_DATE = #{row.updDate,jdbcType=TIMESTAMP},
+      </if>
+      <if test="row.updUserId != null">
+        UPD_USER_ID = #{row.updUserId,jdbcType=VARCHAR},
+      </if>
+    </set>
+    <if test="example != null">
+      <include refid="Update_By_Example_Where_Clause" />
+    </if>
+  </update>
+  <update id="updateByExample" parameterType="map">
+    update T_REFRESH_TOKEN
+    set TOKEN_ID = #{row.tokenId,jdbcType=BIGINT},
+      USER_ID = #{row.userId,jdbcType=VARCHAR},
+      TOKEN_HASH = #{row.tokenHash,jdbcType=VARCHAR},
+      REVOKED_FLAG = #{row.revokedFlag,jdbcType=CHAR},
+      EXPIRES_AT = #{row.expiresAt,jdbcType=TIMESTAMP},
+      USER_AGENT = #{row.userAgent,jdbcType=VARCHAR},
+      IP_ADDRESS = #{row.ipAddress,jdbcType=VARCHAR},
+      INS_DATE = #{row.insDate,jdbcType=TIMESTAMP},
+      INS_USER_ID = #{row.insUserId,jdbcType=VARCHAR},
+      UPD_DATE = #{row.updDate,jdbcType=TIMESTAMP},
+      UPD_USER_ID = #{row.updUserId,jdbcType=VARCHAR}
+    <if test="example != null">
+      <include refid="Update_By_Example_Where_Clause" />
+    </if>
+  </update>
+  <update id="updateByPrimaryKeySelective" parameterType="com.example.backend.db.entity.TRefreshToken">
+    update T_REFRESH_TOKEN
+    <set>
+      <if test="userId != null">
+        USER_ID = #{userId,jdbcType=VARCHAR},
+      </if>
+      <if test="tokenHash != null">
+        TOKEN_HASH = #{tokenHash,jdbcType=VARCHAR},
+      </if>
+      <if test="revokedFlag != null">
+        REVOKED_FLAG = #{revokedFlag,jdbcType=CHAR},
+      </if>
+      <if test="expiresAt != null">
+        EXPIRES_AT = #{expiresAt,jdbcType=TIMESTAMP},
+      </if>
+      <if test="userAgent != null">
+        USER_AGENT = #{userAgent,jdbcType=VARCHAR},
+      </if>
+      <if test="ipAddress != null">
+        IP_ADDRESS = #{ipAddress,jdbcType=VARCHAR},
+      </if>
+      <if test="insDate != null">
+        INS_DATE = #{insDate,jdbcType=TIMESTAMP},
+      </if>
+      <if test="insUserId != null">
+        INS_USER_ID = #{insUserId,jdbcType=VARCHAR},
+      </if>
+      <if test="updDate != null">
+        UPD_DATE = #{updDate,jdbcType=TIMESTAMP},
+      </if>
+      <if test="updUserId != null">
+        UPD_USER_ID = #{updUserId,jdbcType=VARCHAR},
+      </if>
+    </set>
+    where TOKEN_ID = #{tokenId,jdbcType=BIGINT}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.example.backend.db.entity.TRefreshToken">
+    update T_REFRESH_TOKEN
+    set USER_ID = #{userId,jdbcType=VARCHAR},
+      TOKEN_HASH = #{tokenHash,jdbcType=VARCHAR},
+      REVOKED_FLAG = #{revokedFlag,jdbcType=CHAR},
+      EXPIRES_AT = #{expiresAt,jdbcType=TIMESTAMP},
+      USER_AGENT = #{userAgent,jdbcType=VARCHAR},
+      IP_ADDRESS = #{ipAddress,jdbcType=VARCHAR},
+      INS_DATE = #{insDate,jdbcType=TIMESTAMP},
+      INS_USER_ID = #{insUserId,jdbcType=VARCHAR},
+      UPD_DATE = #{updDate,jdbcType=TIMESTAMP},
+      UPD_USER_ID = #{updUserId,jdbcType=VARCHAR}
+    where TOKEN_ID = #{tokenId,jdbcType=BIGINT}
+  </update>
+</mapper>

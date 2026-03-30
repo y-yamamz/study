@@ -1,4 +1,3 @@
-import { createTheme } from "@mui/material/styles";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import './App.css';
 import { Layout } from "./pages/Layout";
@@ -8,12 +7,6 @@ import SideMenuPage from "./pages/SideMenuPage";
 import TaskListPage from "./pages/TaskListPage";
 
 function App() {
-    const theme = createTheme({
-      palette: {
-        mode: "light",
-      },
-    });
-
   return (
     <>
       <BrowserRouter>

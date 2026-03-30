@@ -35,8 +35,8 @@
 
 
         <!-- テーブル指定 -->
-        <table tableName="M_CODE"
-            domainObjectName="MCode" />
+        <table tableName="T_REFRESH_TOKEN"
+            domainObjectName="TRefreshToken" />
     </context>
 
 </generatorConfiguration>

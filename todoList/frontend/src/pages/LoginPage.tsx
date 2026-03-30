@@ -7,17 +7,20 @@ import {
   CardContent,
   CardHeader,
   TextField,
+  Typography,
 } from "@mui/material";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "../components/Header";
 import { SERVICE_URL } from "../constants/const";
+import { saveLoginInfo } from "../common/auth";
 
 
 const LoginPage = () => {
 
   const [userId, setUserId] = useState("");
   const [password, setPassword] = useState("");
+  const [errorMsg, setErrorMsg] = useState("");
   const navigate = useNavigate();
 
   const cardStyle = {
@@ -28,54 +31,44 @@ const LoginPage = () => {
     variant: "outlined",
   };
 
-  interface UserForm{
-    id:string;
-    name:String;
-    password:string;
-  }
-
   const onClickLogin = async () => {
-    try{
-      const re:string = await sendUser();
-      if(re === "OK"){
-        navigate("Layout");
+    setErrorMsg("");
+    try {
+      await login();
+      navigate("Layout");
+    } catch (e: unknown) {
+      if (e instanceof Error) {
+        setErrorMsg(e.message);
+      } else {
+        setErrorMsg("ログインに失敗しました");
       }
-    }catch(e){
-      console.log("エラー")
     }
-    
   };
-  
 
-  const sendUser = async ():Promise<string>  => {
-    var result:string = "";
-     console.log(result);
+  const login = async () => {
+    const res = await fetch(SERVICE_URL.BASE_URL + "api/userLogin", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ userId, password }),
+    });
 
-      const data: UserForm = {
-        id:userId,
-        name:"dd",
-        password:password,
-      }
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body?.error ?? "ユーザーIDまたはパスワードが正しくありません");
+    }
 
-      const res = await fetch(SERVICE_URL.BASE_URL + "api/userLogin", {
-        method:"POST",
-        headers:{
-          "Content-Type": "application/json",
-        },
-        body:JSON.stringify(data),
-      } );
-
-      result = await res.text();
-
-      return result;
-  }
+    const data = await res.json();
+    saveLoginInfo(data);
+  };
 
 
   return (
     <>
       <div >
         <Header/>
-        <Box 
+        <Box
               display="flex"
               alignItems="center"
               justifyContent="center"
@@ -88,9 +81,8 @@ const LoginPage = () => {
                     <TextField
                       fullWidth
                       id="username"
-                      type="email"
-                      label="Username"
-                      placeholder="Username"
+                      label="ユーザーID"
+                      placeholder="ユーザーID"
                       margin="normal"
                       onChange={(e) => setUserId(e.target.value)}
                     />
@@ -98,11 +90,16 @@ const LoginPage = () => {
                       fullWidth
                       id="password"
                       type="password"
-                      label="Password"
-                      placeholder="Password"
+                      label="パスワード"
+                      placeholder="パスワード"
                       margin="normal"
                       onChange={(e) => setPassword(e.target.value)}
                     />
+                    {errorMsg && (
+                      <Typography color="error" variant="body2" mt={1}>
+                        {errorMsg}
+                      </Typography>
+                    )}
                   </div>
                 </CardContent>
                 <CardActions>
