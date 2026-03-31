@@ -159,7 +159,7 @@ const TaskListPage = () => {
 
                 return (
                   <TableRow key={row.projectCd + row.ticketNo} sx={{
-                    backgroundColor: isSel ? 'rgba(99,102,241,0.05) !important' : 'transparent',
+                    backgroundColor: isSel ? 'rgba(99,102,241,0.05) !important' : (sc?.color ? sStyle.bg : 'transparent'),
                     outline: isSel ? '2px solid rgba(99,102,241,0.15)' : 'none',
                     outlineOffset: '-2px',
                     transition: 'all 0.15s ease',
@@ -215,7 +215,7 @@ const TaskListPage = () => {
                     </TableCell>
 
                     {/* デプロイ状態（セレクト＋カラーChip） */}
-                    <TableCell sx={{ minWidth: 155 }}>
+                    <TableCell sx={{ minWidth: 155, ...(dc?.color ? { backgroundColor: dStyle.bg } : {}) }}>
                       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.6, alignItems: 'stretch' }}>
                         <Select value={row.deployCd} size="small" fullWidth sx={selectCellSx}
                           onChange={e => handleChange(index, "deployCd", e.target.value)}>
@@ -235,17 +235,17 @@ const TaskListPage = () => {
                     </TableCell>
 
                     {/* 内容 */}
-                    <TableCell sx={{ minWidth: 200 }}>
+                    <TableCell sx={{ minWidth: 500 }}>
                       <TextField variant="outlined" size="small" fullWidth sx={inputCellSx}
-                        value={row.note} error={!!taskErrors[index]?.note}
+                        value={row.note} error={!!taskErrors[index]?.note} multiline rows={5}
                         helperText={taskErrors[index]?.note}
                         onChange={e => handleChange(index, "note", e.target.value)} />
                     </TableCell>
 
                     {/* 備考 */}
-                    <TableCell sx={{ minWidth: 200 }}>
+                    <TableCell sx={{ minWidth: 500 }}>
                       <TextField variant="outlined" size="small" fullWidth sx={inputCellSx}
-                        value={row.biko} error={!!taskErrors[index]?.biko}
+                        value={row.biko} error={!!taskErrors[index]?.biko} multiline rows={5}
                         helperText={taskErrors[index]?.biko}
                         onChange={e => handleChange(index, "biko", e.target.value)} />
                     </TableCell>
