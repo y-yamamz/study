@@ -1,5 +1,15 @@
 import { apiFetch } from '../../common/apiClient';
-import type { TodoList, MstProject, MstCode } from './types';
+import type { TodoList, MstProject, MstCode, MstSystem } from './types';
+
+/** システムマスタをコンボボックス用に取得する */
+export const getSystemList = async (): Promise<MstSystem[]> => {
+  const r = await apiFetch("api/getMstSystemCbbList", {
+    method: "POST",
+    body: JSON.stringify({ cd: "", systemName: "" }),
+  });
+  if (!r.ok) throw new Error();
+  return r.json();
+};
 
 /** タスク一覧を全件取得する */
 export const getTaskList = async (): Promise<TodoList[]> => {
@@ -8,11 +18,11 @@ export const getTaskList = async (): Promise<TodoList[]> => {
   return r.json();
 };
 
-/** プロジェクトマスタをコンボボックス用に取得する（システムCD:001 固定） */
+/** プロジェクトマスタをコンボボックス用に取得する（全システム分） */
 export const getProjectList = async (): Promise<MstProject[]> => {
   const r = await apiFetch("api/getMstProjectCbbList", {
     method: "POST",
-    body: JSON.stringify({ systemCd: "001", cd: "", projectName: "" }),
+    body: JSON.stringify({ systemCd: "", cd: "", projectName: "" }),
   });
   if (!r.ok) throw new Error();
   return r.json();

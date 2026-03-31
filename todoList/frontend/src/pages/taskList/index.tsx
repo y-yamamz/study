@@ -7,16 +7,19 @@ import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Select from '@mui/material/Select';
 import Button from '@mui/material/Button';
-import { Box, Checkbox, Chip, MenuItem, Stack, TextField, Typography } from '@mui/material';
+import { Box, Checkbox, Chip, MenuItem, Stack, Typography } from '@mui/material';
+import { useState } from 'react';
 import { useTaskList } from './useTaskList';
 import { toChipStyle, getRowKey } from './utils';
 import { inputCellSx, selectCellSx, tableHeadCellSx } from './styles';
+import LocalTextField from '../../common/LocalTextField';
 
 const TaskListPage = () => {
   const {
-    projectsCodes, statusCodes, deployCodes,
-    tasks, filteredTasks,
+    systemCodes, projectsCodes, statusCodes, deployCodes,
+    tasks, taskIds, filteredTasks,
     selectedKeys,
+    filterSystemCd,  setFilterSystemCd,
     filterProjectCd, setFilterProjectCd,
     filterStatusCd,  setFilterStatusCd,
     filterDeployCd,  setFilterDeployCd,
@@ -98,8 +101,9 @@ const TaskListPage = () => {
         }}>
           <Typography sx={{ fontSize: '0.72rem', fontWeight: 700, color: '#6366f1' }}>🔍 フィルタ</Typography>
         </Box>
-        {/* プロジェクト・進捗状態・デプロイ状態の各フィルタを動的に生成 */}
+        {/* システム・プロジェクト・進捗状態・デプロイ状態の各フィルタを動的に生成 */}
         {[
+          { val: filterSystemCd,  set: setFilterSystemCd,  label: 'システム（全て）',      items: systemCodes.map(s => ({ v: s.cd, l: s.systemName })) },
           { val: filterProjectCd, set: setFilterProjectCd, label: 'プロジェクト（全て）', items: projectsCodes.map(p => ({ v: p.cd, l: p.projectName })) },
           { val: filterStatusCd,  set: setFilterStatusCd,  label: '進捗状態（全て）',     items: statusCodes.map(c => ({ v: c.cd, l: c.cdName })) },
           { val: filterDeployCd,  set: setFilterDeployCd,  label: 'デプロイ状態（全て）', items: deployCodes.map(c => ({ v: c.cd, l: c.cdName })) },
@@ -126,13 +130,12 @@ const TaskListPage = () => {
       }}>
         <TableContainer component={Paper} elevation={0}
           sx={{ maxHeight: 'calc(100vh - 350px)', background: 'transparent', border: 'none' }}>
-          <Table sx={{ minWidth: 1200 }} stickyHeader>
+          <Table sx={{ minWidth: 1200, '& .MuiTableCell-stickyHeader': { backgroundColor: '#f4f4fe', zIndex: 100 } }} stickyHeader>
             <TableHead>
               <TableRow>
                 {/* 全件選択チェックボックス（一部選択時はindeterminate表示） */}
                 <TableCell padding="checkbox" sx={{
-                  background: 'linear-gradient(135deg,rgba(99,102,241,0.07),rgba(139,92,246,0.05)) !important',
-                  borderBottom: '2px solid rgba(99,102,241,0.15) !important',
+                  borderBottom: '2px solid #e8e8fd !important',
                 }}>
                   <Checkbox
                     indeterminate={selectedKeys.size > 0 && selectedKeys.size < filteredTasks.length}
@@ -140,7 +143,7 @@ const TaskListPage = () => {
                     onChange={e => handleSelectAll(e.target.checked, filteredTasks)}
                   />
                 </TableCell>
-                {['プロジェクト', 'チケット番号', 'リビジョン番号', '進捗状態', 'デプロイ状態', '内容', '備考'].map(h => (
+                {['システム', 'プロジェクト', 'チケット番号', 'リビジョン番号', '進捗状態', 'デプロイ状態', '内容', '備考'].map(h => (
                   <TableCell key={h} align="center" sx={tableHeadCellSx}>{h}</TableCell>
                 ))}
               </TableRow>
@@ -149,6 +152,8 @@ const TaskListPage = () => {
               {filteredTasks.map(row => {
                 // tasks配列上の実インデックスを取得（フィルタ後のインデックスと異なるため）
                 const index  = tasks.indexOf(row);
+                // 行の安定したキー（チケット番号等の変更でアンマウントされないよう UUID を使用）
+                const rowId  = taskIds[index];
                 // 現在の進捗状態・デプロイ状態のマスタ情報を取得
                 const sc     = statusCodes.find(s => s.cd === row.statusCd);
                 const dc     = deployCodes.find(d => d.cd === row.deployCd);
@@ -158,8 +163,8 @@ const TaskListPage = () => {
                 const isSel  = selectedKeys.has(getRowKey(row));
 
                 return (
-                  <TableRow key={row.projectCd + row.ticketNo} sx={{
-                    backgroundColor: isSel ? 'rgba(99,102,241,0.05) !important' : (sc?.color ? sStyle.bg : 'transparent'),
+                  <TableRow key={rowId} sx={{
+                    backgroundColor: isSel ? '#f7f7fe !important' : (sc?.color ? sStyle.bg : 'transparent'),
                     outline: isSel ? '2px solid rgba(99,102,241,0.15)' : 'none',
                     outlineOffset: '-2px',
                     transition: 'all 0.15s ease',
@@ -169,33 +174,42 @@ const TaskListPage = () => {
                         onChange={e => handleSelectRow(getRowKey(row), e.target.checked)} />
                     </TableCell>
 
-                    {/* プロジェクト選択 */}
+                    {/* システム選択 */}
+                    <TableCell sx={{ minWidth: 120 }}>
+                      <Select value={row.systemCd} size="small" fullWidth sx={selectCellSx}
+                        onChange={e => handleChange(index, "systemCd", e.target.value)}>
+                        <MenuItem value="">選択</MenuItem>
+                        {systemCodes.map(s => <MenuItem key={s.cd} value={s.cd}>{s.systemName}</MenuItem>)}
+                      </Select>
+                    </TableCell>
+
+                    {/* プロジェクト選択（選択中のシステムCDに紐づくプロジェクトのみ表示） */}
                     <TableCell sx={{ minWidth: 140 }}>
                       <Select value={row.projectCd} size="small" fullWidth sx={selectCellSx}
                         onChange={e => handleChange(index, "projectCd", e.target.value)}>
                         <MenuItem value="">選択</MenuItem>
-                        {projectsCodes.map(p => <MenuItem key={p.cd} value={p.cd}>{p.projectName}</MenuItem>)}
+                        {projectsCodes.filter(p => p.systemCd === row.systemCd).map(p => <MenuItem key={p.cd} value={p.cd}>{p.projectName}</MenuItem>)}
                       </Select>
                     </TableCell>
 
                     {/* チケット番号 */}
-                    <TableCell sx={{ minWidth: 130 }}>
-                      <TextField variant="outlined" size="small" fullWidth sx={inputCellSx}
+                    <TableCell sx={{ minWidth: 100 }}>
+                      <LocalTextField sx={inputCellSx}
                         value={row.ticketNo} error={!!taskErrors[index]?.ticketNo}
                         helperText={taskErrors[index]?.ticketNo}
-                        onChange={e => handleChange(index, "ticketNo", e.target.value)} />
+                        onChange={v => handleChange(index, "ticketNo", v)} />
                     </TableCell>
 
                     {/* リビジョン番号 */}
-                    <TableCell sx={{ minWidth: 130 }}>
-                      <TextField variant="outlined" size="small" fullWidth sx={inputCellSx}
+                    <TableCell sx={{ minWidth: 100 }}>
+                      <LocalTextField sx={inputCellSx}
                         value={row.revisionNo} error={!!taskErrors[index]?.revisionNo}
-                        helperText={taskErrors[index]?.revisionNo}
-                        onChange={e => handleChange(index, "revisionNo", e.target.value)} />
+                        helperText={taskErrors[index]?.revisionNo} multiline={true} rows={5}
+                        onChange={v => handleChange(index, "revisionNo", v)} />
                     </TableCell>
 
                     {/* 進捗状態（セレクト＋カラーChip） */}
-                    <TableCell sx={{ minWidth: 155 }}>
+                    <TableCell sx={{ minWidth: 120 }}>
                       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.6, alignItems: 'stretch' }}>
                         <Select value={row.statusCd} size="small" fullWidth sx={selectCellSx}
                           onChange={e => handleChange(index, "statusCd", e.target.value)}>
@@ -215,7 +229,7 @@ const TaskListPage = () => {
                     </TableCell>
 
                     {/* デプロイ状態（セレクト＋カラーChip） */}
-                    <TableCell sx={{ minWidth: 155, ...(dc?.color ? { backgroundColor: dStyle.bg } : {}) }}>
+                    <TableCell sx={{ minWidth: 130, ...(dc?.color ? { backgroundColor: dStyle.bg } : {}) }}>
                       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.6, alignItems: 'stretch' }}>
                         <Select value={row.deployCd} size="small" fullWidth sx={selectCellSx}
                           onChange={e => handleChange(index, "deployCd", e.target.value)}>
@@ -236,18 +250,18 @@ const TaskListPage = () => {
 
                     {/* 内容 */}
                     <TableCell sx={{ minWidth: 500 }}>
-                      <TextField variant="outlined" size="small" fullWidth sx={inputCellSx}
+                      <LocalTextField sx={inputCellSx}
                         value={row.note} error={!!taskErrors[index]?.note} multiline rows={5}
                         helperText={taskErrors[index]?.note}
-                        onChange={e => handleChange(index, "note", e.target.value)} />
+                        onChange={v => handleChange(index, "note", v)} />
                     </TableCell>
 
                     {/* 備考 */}
                     <TableCell sx={{ minWidth: 500 }}>
-                      <TextField variant="outlined" size="small" fullWidth sx={inputCellSx}
+                      <LocalTextField sx={inputCellSx}
                         value={row.biko} error={!!taskErrors[index]?.biko} multiline rows={5}
                         helperText={taskErrors[index]?.biko}
-                        onChange={e => handleChange(index, "biko", e.target.value)} />
+                        onChange={v => handleChange(index, "biko", v)} />
                     </TableCell>
                   </TableRow>
                 );
@@ -256,7 +270,7 @@ const TaskListPage = () => {
               {/* タスクが0件の場合の空状態表示 */}
               {filteredTasks.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={8} align="center" sx={{ py: 8 }}>
+                  <TableCell colSpan={9} align="center" sx={{ py: 8 }}>
                     <Box sx={{ fontSize: '48px', mb: 2 }}>📋</Box>
                     <Typography sx={{ color: '#9ca3af', fontWeight: 600, fontSize: '0.95rem' }}>
                       タスクがありません

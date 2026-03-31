@@ -11,7 +11,7 @@ export const toChipStyle = (hex: string) => {
   const g = parseInt(hex.slice(3, 5), 16);
   const b = parseInt(hex.slice(5, 7), 16);
   return {
-    bg:     `rgba(${r},${g},${b},0.12)`,
+    bg:     `rgb(${Math.round(255 * 0.88 + r * 0.12)},${Math.round(255 * 0.88 + g * 0.12)},${Math.round(255 * 0.88 + b * 0.12)})`,
     border: `rgba(${r},${g},${b},0.35)`,
     text:   hex,
   };

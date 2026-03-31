@@ -292,11 +292,11 @@
         resultType="com.example.backend.dto.MProjectDto">
     SELECT SYSTEM_CD, CD, PROJECT_NAME
     FROM M_PROJECT
-    WHERE 
-     SYSTEM_CD = #{systemCd,jdbcType=VARCHAR}
-     and
-     YUKO_FLAG = '1'
-     
+    WHERE
+      YUKO_FLAG = '1'
+      <if test="systemCd != null and systemCd != ''">
+        AND SYSTEM_CD = #{systemCd,jdbcType=VARCHAR}
+      </if>
   </select>
 
 </mapper>

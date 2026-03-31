@@ -1,3 +1,9 @@
+/** システムマスタ（コンボボックス用） */
+export interface MstSystem {
+  cd: string;
+  systemName: string;
+}
+
 /** プロジェクトマスタ（コンボボックス用） */
 export interface MstProject {
   systemCd: string;

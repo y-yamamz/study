@@ -24,8 +24,7 @@ export const selectCellSx: SxProps<Theme> = {
 
 /** テーブルヘッダーセル共通スタイル */
 export const tableHeadCellSx: SxProps<Theme> = {
-  background: 'linear-gradient(135deg,rgba(99,102,241,0.07),rgba(139,92,246,0.05)) !important',
-  borderBottom: '2px solid rgba(99,102,241,0.15) !important',
+  borderBottom: '2px solid #e8e8fd !important',
   fontSize: '0.72rem',
   fontWeight: 700,
   letterSpacing: '0.06em',
@@ -33,4 +32,5 @@ export const tableHeadCellSx: SxProps<Theme> = {
   color: '#4f46e5',
   py: 1.5,
   whiteSpace: 'nowrap',
+  background: '#f3f4ff',
 };
